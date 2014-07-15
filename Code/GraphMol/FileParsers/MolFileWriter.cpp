@@ -829,7 +829,14 @@ namespace RDKit{
     RWMol &trwmol = static_cast<RWMol &>(tromol);
     // NOTE: kekulize the molecule before writing it out
     // because of the way mol files handle aromaticity
-    if(kekulize) MolOps::Kekulize(trwmol);
+    if(kekulize) {
+		try { //dkoes, I want to be tolerant of these sorts of problems, particularly with fragments
+			MolOps::Kekulize(trwmol);
+		} catch (MolSanitizeException& e)
+		{
+			 BOOST_LOG(rdErrorLog) << "Error in Kekulization\n";
+		}
+	}
 
 #if 0
     if(includeStereo){

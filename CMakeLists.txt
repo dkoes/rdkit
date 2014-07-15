@@ -5,6 +5,8 @@ endif()
 
 project (RDKit)
 
+add_definitions(-DSHOW_BACKTRACES_WITH_INVARIANT_ERRORS)  #dkoes
+
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."

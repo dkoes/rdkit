@@ -102,6 +102,37 @@ namespace RDKit {
     bool df_sanitize,df_removeHs,df_strictParsing;
   };
 
+  // \brief a multi-conformer supplier from an SD file that only reads forward
+  class MCForwardSDMolSupplier : public MolSupplier {
+    /*************************************************************************
+     * A lazy mol supplier from a SD file.
+     *  - Co-located molecules with the same name and compatible connection table are
+     *    merged into single multi-conformer molecules
+     ***********************************************************************************/
+  public:
+    MCForwardSDMolSupplier() { init(); };
+
+    explicit MCForwardSDMolSupplier(std::istream *inStream, bool takeOwnership=true,
+                                  bool sanitize=true,bool removeHs=true,
+                                  bool strictParsing=false);
+
+    virtual ~MCForwardSDMolSupplier() {
+        if(last != NULL) delete last;
+    };
+
+    virtual void init();
+    virtual void reset();
+    virtual ROMol *next();
+    virtual bool atEnd();
+
+  protected:
+    ForwardSDMolSupplier supplier;
+    ROMol *last; //the molecule we read ahead that was a new mol
+
+    bool areSameMol(ROMol *a, ROMol *b);
+
+  };
+
 
   // \brief a lazy supplier from an SD file
   class SDMolSupplier : public ForwardSDMolSupplier {

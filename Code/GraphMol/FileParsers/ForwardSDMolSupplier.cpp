@@ -15,6 +15,7 @@
 #include <GraphMol/SanitException.h>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/graph/isomorphism.hpp>
 #include "MolSupplier.h"
 #include "FileParsers.h"
 
@@ -245,6 +246,82 @@ namespace RDKit {
     PRECONDITION(dp_inStream,"no stream");
     return df_end;
   }
+
+
+  //multi-conformer supplier - wraps regular supplier
+  MCForwardSDMolSupplier::MCForwardSDMolSupplier(std::istream *inStream, bool takeOwnership,
+                                    bool sanitize,bool removeHs,
+                                    bool strictParsing): supplier(inStream, takeOwnership, sanitize, removeHs, strictParsing), last(NULL)
+  {
+
+  }
+
+
+  void MCForwardSDMolSupplier::init(){
+    supplier.init();
+    if(last) delete last;
+    last = NULL;
+  }
+
+  void MCForwardSDMolSupplier::reset() {
+    UNDER_CONSTRUCTION("reset() not supported for MCForwardSDMolSuppliers();");
+  }
+
+  ROMol *MCForwardSDMolSupplier::next() {
+
+    if(last == NULL) //first read
+      last = supplier.next();
+    ROMol *ret = last;
+    last = NULL;
+
+    if(supplier.atEnd()) {
+      return ret;
+    }
+
+    //keep reading molecules into ret as long as they are compatible
+    while(!supplier.atEnd())
+    {
+      ROMol *next = supplier.next();
+      if(areSameMol(ret, next))
+      {
+        //merge next into ret
+        Conformer *conf = new Conformer(next->getConformer());
+        ret->addConformer(conf, true);
+        delete next;
+      }
+      else //new molecule, with provide next
+      {
+        last = next;
+        return ret;
+      }
+    }
+    return ret;
+  }
+
+  bool MCForwardSDMolSupplier::atEnd() {
+    //finished when nothing left to read AND we have supplied last
+    return supplier.atEnd() && last == NULL;
+  }
+
+  //return true if a and b look the same
+  bool MCForwardSDMolSupplier::areSameMol(ROMol *a, ROMol *b)
+  {
+    if(a->getNumAtoms() != b->getNumAtoms())
+      return false;
+    if(a->getNumBonds() != b->getNumBonds())
+      return false;
+
+    std::string aname, bname;
+    a->getProp("_Name",aname);
+    b->getProp("_Name",bname);
+    if(aname != bname)
+      return false;
+
+    //check connectivity (perhaps this is needlessly heavy weight?)
+    return boost::isomorphism(a->getTopology(), b->getTopology());
+
+  }
+
 }
  
 

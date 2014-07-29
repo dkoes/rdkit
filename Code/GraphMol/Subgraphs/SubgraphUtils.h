@@ -43,6 +43,18 @@ namespace RDKit{
                         std::map<int,int> &atomIdxMap);
     ROMol *pathToSubmol(const ROMol &mol, const PATH_TYPE &path, 
                         bool useQuery=false);
+
+
+    //create a new molecule object from a part of mol that contains only those
+    //atoms specified by atomIds.  Bonds between these atoms are retained.
+    ROMol *atomsToSubmol(const ROMol& mol, const PATH_TYPE& atomIds, std::map<int,int> &atomIdxMap);
+
+
+    //create a new molecule object from a part of mol that contains only those
+    //atoms specified by atomIds.  Bonds between these atoms are retained.
+    //Not necessary to specify map.
+    ROMol *atomsToSubmol(const ROMol& mol, const PATH_TYPE& atomIds);
+
   } // end of namespace Subgraphs
 }
 

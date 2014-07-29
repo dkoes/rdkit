@@ -110,6 +110,64 @@ namespace RDKit {
       return subMol;
     }
 
+    ROMol *atomsToSubmol(const ROMol& mol, const PATH_TYPE& atomIds)
+    {
+      std::map<int,int> atomIdxMap;
+      return atomsToSubmol(mol, atomIds, atomIdxMap);
+    }
+
+    //create a new molecule object from a part of mol that contains only those
+    //atoms specified by atomIds.  Bonds between these atoms are retained.
+    ROMol *atomsToSubmol(const ROMol& mol,const PATH_TYPE& atomIds,
+        std::map<int, int> &atomIdxMap){
+      RWMol *subMol = new RWMol();
+      PATH_TYPE::const_iterator pathIter;
+      atomIdxMap.clear();
+      //copy atoms and fill in mapping
+      for(unsigned i = 0, n = atomIds.size(); i < n; i++){
+        const Atom *atom = mol.getAtomWithIdx(atomIds[i]);
+        int newAtomIdx = subMol->addAtom(atom->copy(), false, true);
+        atomIdxMap[atom->getIdx()] = newAtomIdx;
+      }
+
+      //copy only those bonds that exist between the specified atoms
+      for(ROMol::ConstBondIterator bondIt = mol.beginBonds(), end = mol.endBonds();
+          bondIt != end; bondIt++){
+        const Bond *bond = *bondIt;
+        int begIdx = bond->getBeginAtomIdx();
+        int endIdx = bond->getEndAtomIdx();
+
+        if(atomIdxMap.count(begIdx) > 0 && atomIdxMap.count(endIdx) > 0){
+          //copy bond
+          Bond *newbond = bond->copy();
+          newbond->setOwningMol(subMol);
+          newbond->setBeginAtomIdx(atomIdxMap[begIdx]);
+          newbond->setEndAtomIdx(atomIdxMap[endIdx]);
+          subMol->addBond(newbond, true);
+        }
+      }
+
+      if(mol.getNumConformers()){
+        // copy coordinates over:
+        for(ROMol::ConstConformerIterator confIt = mol.beginConformers();
+            confIt != mol.endConformers(); ++confIt){
+          Conformer *conf = new Conformer(subMol->getNumAtoms());
+          conf->set3D((*confIt)->is3D());
+          for(INT_MAP_INT::const_iterator mapIt = atomIdxMap.begin();
+              mapIt != atomIdxMap.end(); ++mapIt){
+            conf->setAtomPos(mapIt->second,
+                (*confIt)->getAtomPos(mapIt->first));
+          }
+          conf->setId((*confIt)->getId());
+          subMol->addConformer(conf, false);
+        }
+      }
+      // clear computed properties
+      subMol->clearComputedProps(true);
+
+      return subMol;
+    }
+
     PATH_TYPE bondListFromAtomList(const ROMol &mol, const PATH_TYPE &atomIds) {
       PATH_TYPE bids;
       unsigned int natms = atomIds.size();

@@ -282,6 +282,8 @@ namespace RDKit {
     while(!supplier.atEnd())
     {
       ROMol *next = supplier.next();
+      if(next == NULL)
+        break; //at end apparently?
       if(areSameMol(ret, next))
       {
         //merge next into ret

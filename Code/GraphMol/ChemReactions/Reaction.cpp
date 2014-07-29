@@ -891,7 +891,7 @@ namespace RDKit {
           }
         }
       } // end of conformer update loop
-
+      return true;
     } // end of addReactantAtomsAndBonds()
   } // End of namespace ReactionUtils
 

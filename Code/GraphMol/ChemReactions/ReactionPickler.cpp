@@ -175,6 +175,11 @@ namespace RDKit{
       throw ReactionPicklerException("Bad pickle format: ENDPRODUCTS tag not found.");
     }
 
+    streamRead(ss,tag); //dkoes - this check was missing
+    if(tag != ENDREACTION){
+      throw ReactionPicklerException("Bad pickle format: ENDREACTION tag not found.");
+    }
+
     // need to do this after we add reactants and products
     rxn->df_needsInit = flag & 0x2;
 

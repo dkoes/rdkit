@@ -50,17 +50,17 @@ namespace RDKit {
   typedef __int64 LONGINT;
 #endif
 #ifdef max
-#undef max // FUCK I hate this nonsense
+#undef max //  I hate this nonsense
 #endif  
 #ifdef min
-#undef min // FUCK I hate this nonsense
+#undef min //  I hate this nonsense
 #endif  
   
-  const double MAX_DOUBLE = std::numeric_limits<double>::max();
-  const double EPS_DOUBLE = std::numeric_limits<double>::epsilon();
+  const double MAX_DOUBLE __attribute__((unused)) = std::numeric_limits<double>::max();
+  const double EPS_DOUBLE __attribute__((unused)) = std::numeric_limits<double>::epsilon();
   const double SMALL_DOUBLE = 1.0e-8;
-  const double MAX_INT = static_cast<double>(std::numeric_limits<int>::max());
-  const double MAX_LONGINT = static_cast<double>(std::numeric_limits<LONGINT>::max());
+  const double MAX_INT __attribute__((unused)) = static_cast<double>(std::numeric_limits<int>::max());
+  const double MAX_LONGINT __attribute__((unused)) = static_cast<double>(std::numeric_limits<LONGINT>::max());
 
   typedef unsigned int                       UINT;
   typedef unsigned short                     USHORT;

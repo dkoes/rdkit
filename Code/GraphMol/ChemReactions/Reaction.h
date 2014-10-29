@@ -38,7 +38,9 @@
 
 namespace RDKit{
   class ReactionPickler;
-     
+  typedef std::vector<MatchVectType> VectMatchVectType;
+  typedef std::vector<VectMatchVectType> VectVectMatchVectType;
+
   //! used to indicate an error in the chemical reaction engine
   class ChemicalReactionException : public std::exception {
   public:
@@ -188,7 +190,8 @@ namespace RDKit{
       sets.
     */
     std::vector<MOL_SPTR_VECT> runReactants(const MOL_SPTR_VECT reactants) const;
-
+    std::vector<MOL_SPTR_VECT> runReactants(const MOL_SPTR_VECT reactants,
+        VectVectMatchVectType& reactantMatchesPerProduct) const;
     MOL_SPTR_VECT::const_iterator beginReactantTemplates() const {
         return this->m_reactantTemplates.begin();    
     }
@@ -289,6 +292,8 @@ namespace RDKit{
     bool df_implicitProperties;
     MOL_SPTR_VECT m_reactantTemplates,m_productTemplates,m_agentTemplates;
     ChemicalReaction &operator=(const ChemicalReaction &); // disable assignment
+    MOL_SPTR_VECT generateOneProductSet(const MOL_SPTR_VECT &reactants,
+                                         const std::vector<MatchVectType> &reactantsMatch) const;
   };
 
   //! tests whether or not the molecule has a substructure match

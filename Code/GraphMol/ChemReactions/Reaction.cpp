@@ -40,11 +40,13 @@
 #include <algorithm>
 #include <GraphMol/ChemTransforms/ChemTransforms.h>
 #include <GraphMol/SmilesParse/SmilesParse.h>
+#include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
+#include <GraphMol/ChemReactions/ReactionUtils.h>
+#include "GraphMol/ChemReactions/ReactionRunner.h"
 
 namespace RDKit {
-  typedef std::vector<MatchVectType> VectMatchVectType;
-  typedef std::vector<VectMatchVectType> VectVectMatchVectType;
+
 
   namespace {
 // recursively looks for atomic number queries anywhere in this set of children
@@ -348,6 +350,7 @@ namespace RDKit {
           // now clear the molAtomMapNumber property so that it doesn't
           // end up in the products (this was bug 3140490):
           newAtom->clearProp("molAtomMapNumber");
+          newAtom->setProp("atomMapNumber", mapNum); //dkoes, well, I want it
         }
 
         newAtom->setChiralTag(Atom::CHI_UNSPECIFIED);
@@ -634,6 +637,9 @@ namespace RDKit {
                 reactProdAtomMap[lReactantAtom->getIdx()];
             productAtom = product->getAtomWithIdx(lReactantAtomProductIndex);
             visitedAtoms[lReactantAtom->getIdx()] = 1;
+
+            //dkoes - I want to know where all the atoms came from
+            productAtom->setProp("reactantIdx",lReactantAtom->getIdx());
 
             // Check our neighbors:
             ROMol::ADJ_ITER nbrIdx, endNbrs;
@@ -946,6 +952,13 @@ namespace RDKit {
 
   std::vector<MOL_SPTR_VECT> ChemicalReaction::runReactants(
       const MOL_SPTR_VECT reactants) const{
+    VectVectMatchVectType reactantMatchesPerProduct;
+    return runReactants(reactants, reactantMatchesPerProduct);
+  }
+
+  //this version stores matching to reactants
+  std::vector<MOL_SPTR_VECT> ChemicalReaction::runReactants(
+      const MOL_SPTR_VECT reactants,  VectVectMatchVectType& reactantMatchesPerProduct) const{
     if(this->df_needsInit){
       throw ChemicalReactionException(
           "initMatchers() must be called before runReactants()");
@@ -961,6 +974,7 @@ namespace RDKit {
     std::vector<MOL_SPTR_VECT> productMols;
     productMols.clear();
 
+    reactantMatchesPerProduct.clear();
     // if we have no products, return now:
     if(!this->getNumProductTemplates()){
       return productMols;
@@ -978,7 +992,6 @@ namespace RDKit {
     // we now have matches for each reactant, so we can start creating products:
 
     // start by doing the combinatorics on the matches:
-    VectVectMatchVectType reactantMatchesPerProduct;
     ReactionUtils::generateReactantCombinations(matchesByReactant,
         reactantMatchesPerProduct);
     productMols.resize(reactantMatchesPerProduct.size());
@@ -1268,6 +1281,41 @@ namespace RDKit {
     return isMoleculeProductOfReaction(rxn, mol, ignore);
   }
 
+  bool isMoleculeAgentOfReaction(const ChemicalReaction &rxn,const ROMol &mol,
+      unsigned int &which)
+  {
+    if(!rxn.isInitialized()){
+    throw ChemicalReactionException("initMatchers() must be called first");
+  }
+  which=0;
+  for(MOL_SPTR_VECT::const_iterator iter=rxn.beginAgentTemplates();
+      iter!=rxn.endAgentTemplates();++iter,++which){
+    if(iter->get()->getNumHeavyAtoms() != mol.getNumHeavyAtoms()){
+        continue;
+    }
+      if(iter->get()->getNumBonds() != mol.getNumBonds()){
+    continue;
+      }
+      // not possible, update property cache not possible for const molecules
+//      if(iter->get()->getRingInfo()->numRings() != mol.getRingInfo()->numRings()){
+//          return false;
+//      }
+      if(RDKit::Descriptors::calcAMW(*iter->get()) != RDKit::Descriptors::calcAMW(mol)){
+    continue;
+      }
+      MatchVectType tvect;
+      if(SubstructMatch(mol,**iter,tvect)){
+        return true;
+    }
+  }
+  return false;
+  }
+
+  bool isMoleculeAgentOfReaction(const ChemicalReaction &rxn,const ROMol &mol){
+  unsigned int ignore;
+    return isMoleculeAgentOfReaction(rxn,mol,ignore);
+  }
+
   void addRecursiveQueriesToReaction(ChemicalReaction &rxn,
       const std::map<std::string, ROMOL_SPTR> &queries,std::string propName,
       std::vector<std::vector<std::pair<unsigned int, std::string> > > *reactantLabels){
@@ -1336,4 +1384,55 @@ namespace RDKit {
     return res;
   }
 
+  void ChemicalReaction::removeUnmappedReactantTemplates(
+    double thresholdUnmappedAtoms,
+    bool moveToAgentTemplates,
+    MOL_SPTR_VECT *targetVector)
+  {
+    MOL_SPTR_VECT res_reactantTemplates;
+  for(MOL_SPTR_VECT::iterator iter = beginReactantTemplates();
+      iter != endReactantTemplates(); ++iter){
+      if(isReactionTemplateMoleculeAgent(*iter->get(), thresholdUnmappedAtoms)){
+        if(moveToAgentTemplates){
+          m_agentTemplates.push_back(*iter);
+        }
+      if(targetVector){
+          targetVector->push_back(*iter);
+        }
+      }
+      else{
+        res_reactantTemplates.push_back(*iter);
+      }
+    }
+  m_reactantTemplates.clear();
+    m_reactantTemplates.insert(m_reactantTemplates.begin(),
+        res_reactantTemplates.begin(), res_reactantTemplates.end());
+    res_reactantTemplates.clear();
+  }
+
+  void ChemicalReaction::removeUnmappedProductTemplates(
+    double thresholdUnmappedAtoms,
+    bool moveToAgentTemplates,
+    MOL_SPTR_VECT *targetVector)
+  {
+    MOL_SPTR_VECT res_productTemplates;
+  for(MOL_SPTR_VECT::iterator iter = beginProductTemplates();
+      iter != endProductTemplates(); ++iter){
+      if(isReactionTemplateMoleculeAgent(*iter->get(), thresholdUnmappedAtoms)){
+        if(moveToAgentTemplates){
+          m_agentTemplates.push_back(*iter);
+        }
+      if(targetVector){
+          targetVector->push_back(*iter);
+        }
+      }
+      else{
+        res_productTemplates.push_back(*iter);
+      }
+  }
+  m_productTemplates.clear();
+    m_productTemplates.insert(m_productTemplates.begin(),
+        res_productTemplates.begin(), res_productTemplates.end());
+    res_productTemplates.clear();
+  }
 } // end of RDKit namespace

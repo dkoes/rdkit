@@ -67,7 +67,7 @@ namespace RDKit {
     //! Resize the conformer so that more atoms location can be added.
     //! Useful, for e.g., when adding hydrogens 
     void resize(unsigned int size) {
-      d_positions.resize(size);
+      d_positions.resize(size, RDGeom::Point3D(0.0, 0.0, 0.0));
     }
 
     //! Reserve more space for atom position 

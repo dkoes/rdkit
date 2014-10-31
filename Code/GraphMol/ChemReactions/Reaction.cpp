@@ -429,6 +429,8 @@ namespace RDKit {
             //CNc1c(C)nc2sccn12
             //of course, I could have fixed this by making the aromatic bonds explicit in the reaction, but
             //I think using the bond state of the reactant is more useful
+            //note this is _only_ relevant if the product has a query (unspecified) bond in it
+            //so if you don't like the behavior - make it explicit
             newB->setProp("NullBond", 1);
 
           } else if(queryDescription == "BondNull"){

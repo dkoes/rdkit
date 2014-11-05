@@ -191,7 +191,7 @@ namespace RDKit{
     */
     std::vector<MOL_SPTR_VECT> runReactants(const MOL_SPTR_VECT reactants) const;
     std::vector<MOL_SPTR_VECT> runReactants(const MOL_SPTR_VECT reactants,
-        VectVectMatchVectType& reactantMatchesPerProduct) const;
+        VectVectMatchVectType& matchesPerProduct) const;
     MOL_SPTR_VECT::const_iterator beginReactantTemplates() const {
         return this->m_reactantTemplates.begin();    
     }

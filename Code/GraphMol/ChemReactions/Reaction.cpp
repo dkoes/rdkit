@@ -960,7 +960,7 @@ namespace RDKit {
 
   //this version stores matching to reactants
   std::vector<MOL_SPTR_VECT> ChemicalReaction::runReactants(
-      const MOL_SPTR_VECT reactants,  VectVectMatchVectType& reactantMatchesPerProduct) const{
+      const MOL_SPTR_VECT reactants,  VectVectMatchVectType& matchesPerProduct) const{
     if(this->df_needsInit){
       throw ChemicalReactionException(
           "initMatchers() must be called before runReactants()");
@@ -976,7 +976,7 @@ namespace RDKit {
     std::vector<MOL_SPTR_VECT> productMols;
     productMols.clear();
 
-    reactantMatchesPerProduct.clear();
+    VectVectMatchVectType reactantMatchesPerProduct;
     // if we have no products, return now:
     if(!this->getNumProductTemplates()){
       return productMols;
@@ -996,18 +996,20 @@ namespace RDKit {
     // start by doing the combinatorics on the matches:
     ReactionUtils::generateReactantCombinations(matchesByReactant,
         reactantMatchesPerProduct);
-    productMols.resize(reactantMatchesPerProduct.size());
+    productMols.reserve(reactantMatchesPerProduct.size());
+    matchesPerProduct.clear();
+    matchesPerProduct.reserve(reactantMatchesPerProduct.size());
 
-    for(unsigned int productId = 0; productId != productMols.size();
+    for(unsigned int productId = 0; productId != reactantMatchesPerProduct.size();
         ++productId){
       MOL_SPTR_VECT lProds = this->generateOneProductSet(reactants,
           reactantMatchesPerProduct[productId]);
-      //dkoes - it is now possible to realize there is no way to create a legitimate product
-      if(lProds.size() == 0){
-        productMols.resize(0);
-        return productMols;
+
+      if(lProds.size() > 0) //dkoes - it is now possible to realize there is no way to create a legitimate product
+      {
+    	  productMols.push_back(lProds);
+    	  matchesPerProduct.push_back(reactantMatchesPerProduct[productId]);
       }
-      productMols[productId] = lProds;
     }
 
     return productMols;

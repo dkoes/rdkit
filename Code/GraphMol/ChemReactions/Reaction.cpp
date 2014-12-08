@@ -874,7 +874,7 @@ namespace RDKit {
       //dkoes - loop over product atoms and update the number of implicit
       //hydrogens for those atoms that are missing it (because they are
       //part of the reaction and so do not get this info copied over from the
-      //reactant).  If we don't do this, things will invariable throw exceptions later.
+      //reactant).  If we don't do this, things will invariably throw exceptions later.
 
       for(ROMol::AtomIterator itr = product->beginAtoms(), end =
           product->endAtoms(); itr != end; itr++){

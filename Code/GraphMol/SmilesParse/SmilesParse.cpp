@@ -153,6 +153,7 @@ namespace RDKit{
 	if(res->hasAtomBookmark(ci_RIGHTMOST_ATOM)){
 	  res->clearAtomBookmark(ci_RIGHTMOST_ATOM);
 	}
+	SmilesParseOps::CleanupAfterParsing(res);
         molVect[0]=0; // NOTE: to avoid leaks on failures, this should occur last in this if.
       }
     } catch (SmilesParseException &e) {
@@ -201,7 +202,7 @@ namespace RDKit{
       // this triggers a sanitization, so we do not need to
       // worry about doing one here:
       try {
-        MolOps::removeHs(*res,false,false);
+        MolOps::removeHs(*res,false,true);
         // figure out stereochemistry:
         MolOps::assignStereochemistry(*res,true,true,true);
       } catch (...) {

@@ -18,6 +18,7 @@ rdkit_headers(Atom.h
               Canon.h
               Chirality.h
               Conformer.h
+              details.h
               GraphMol.h
               MolOps.h
               MolPickler.h
@@ -60,6 +61,7 @@ add_subdirectory(ShapeHelpers)
 add_subdirectory(MolCatalog)
 
 add_subdirectory(MolDrawing)
+add_subdirectory(MolDraw2D)
 
 add_subdirectory(FMCS)
 
@@ -90,5 +92,7 @@ rdkit_test(graphmoltestPickler testPickler.cpp
            LINK_LIBRARIES SmilesParse SubstructMatch FileParsers GraphMol RDGeometryLib RDGeneral)
 
 rdkit_test(graphmolIterTest itertest.cpp LINK_LIBRARIES SmilesParse GraphMol RDGeometryLib RDGeneral)
+
+rdkit_test(graphmolMemTest1 memtest1.cpp LINK_LIBRARIES SmilesParse GraphMol RDGeometryLib RDGeneral)
 
 

@@ -492,8 +492,7 @@ namespace RDKit{
     if(includeRings) this->dp_ringInfo->reset();
 
     STR_VECT compLst;
-    if(hasProp(detail::computedPropName)){
-      getProp(detail::computedPropName, compLst);
+    if(getPropIfPresent(detail::computedPropName, compLst)){
       BOOST_FOREACH(std::string &sv,compLst){
         dp_props->clearVal(sv);
       }
@@ -523,6 +522,18 @@ namespace RDKit{
         ++bondIt){
       (*bondIt)->updatePropertyCache(strict);
     }
+  }
+
+  bool ROMol::needsUpdatePropertyCache() const{
+    for(ConstAtomIterator atomIt=this->beginAtoms();
+      atomIt!=this->endAtoms();
+      ++atomIt){
+      if((*atomIt)->needsUpdatePropertyCache()){
+        return true;
+      }
+    }
+    // there is no test for bonds yet since they do not obtain a valence property
+    return false;
   }
 
   const Conformer &ROMol::getConformer(int id) const {

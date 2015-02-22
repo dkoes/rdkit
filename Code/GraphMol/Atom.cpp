@@ -130,10 +130,8 @@ void Atom::setOwningMol(ROMol *other)
 std::string Atom::getSymbol() const {
   std::string res;
   // handle dummies differently:
-  if(d_atomicNum != 0 || !hasProp("dummyLabel") ){
+  if(d_atomicNum != 0 || !getPropIfPresent<std::string>(common_properties::dummyLabel, res)) {
     res = PeriodicTable::getTable()->getElementSymbol(d_atomicNum);
-  } else {
-    res=getProp<std::string>("dummyLabel");
   }
   return res;
 }
@@ -365,7 +363,7 @@ int Atom::calcImplicitValence(bool strict) {
       // formal charge here vs the explicit valence function.
       bool satis = false;
       for (INT_VECT_CI vi = valens.begin();
-	   vi!=valens.end() && *vi>0; ++vi) {
+           vi!=valens.end() && *vi>0; ++vi) {
         if (explicitPlusRadV == ((*vi) + chg)) {
           satis = true;
           break;
@@ -387,7 +385,7 @@ int Atom::calcImplicitValence(bool strict) {
     // and be able to add hydrogens
     res = -1;
     for (INT_VECT_CI vi = valens.begin();
-	 vi != valens.end() && *vi>=0; ++vi) {
+         vi != valens.end() && *vi>=0; ++vi) {
       int tot = (*vi) + chg;
       if (explicitPlusRadV <= tot) {
         res = tot - explicitPlusRadV;
@@ -474,6 +472,13 @@ bool Atom::Match(Atom const *what) const {
 void Atom::updatePropertyCache(bool strict) {
   calcExplicitValence(strict);
   calcImplicitValence(strict);
+}
+
+bool Atom::needsUpdatePropertyCache() const{
+  if(this->d_explicitValence >= 0 && (this->df_noImplicit || this->d_implicitValence >= 0) ){
+          return false;
+  }
+  return true;
 }
 
 // returns the number of swaps required to convert the ordering

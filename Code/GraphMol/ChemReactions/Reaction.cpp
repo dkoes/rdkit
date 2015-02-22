@@ -1052,19 +1052,17 @@ namespace RDKit {
     }
 
     std::vector<int> mapNumbersSeen;
-    std::map<int, const Atom *> reactingAtoms;
-    unsigned int molIdx = 0;
-    for(MOL_SPTR_VECT::const_iterator molIter = this->beginReactantTemplates();
-        molIter != this->endReactantTemplates(); ++molIter){
-      bool thisMolMapped = false;
-      for(ROMol::AtomIterator atomIt = (*molIter)->beginAtoms();
-          atomIt != (*molIter)->endAtoms(); ++atomIt){
-        if((*atomIt)->hasProp("molAtomMapNumber")){
-          thisMolMapped = true;
-          int mapNum;
-          (*atomIt)->getProp("molAtomMapNumber", mapNum);
-          if(std::find(mapNumbersSeen.begin(), mapNumbersSeen.end(), mapNum)
-              != mapNumbersSeen.end()){
+    std::map<int,const Atom *> reactingAtoms;
+    unsigned int molIdx=0;
+    for(MOL_SPTR_VECT::const_iterator molIter=this->beginReactantTemplates();
+        molIter!=this->endReactantTemplates();++molIter){
+      bool thisMolMapped=false;
+      for(ROMol::AtomIterator atomIt=(*molIter)->beginAtoms();
+          atomIt!=(*molIter)->endAtoms();++atomIt){
+        int mapNum;
+        if((*atomIt)->getPropIfPresent(common_properties::molAtomMapNumber, mapNum)){
+          thisMolMapped=true;
+          if(std::find(mapNumbersSeen.begin(),mapNumbersSeen.end(),mapNum)!=mapNumbersSeen.end()){
             if(!silent){
               BOOST_LOG(rdErrorLog) << "reactant atom-mapping number " << mapNum
                   << " found multiple times.\n";
@@ -1094,30 +1092,37 @@ namespace RDKit {
 
       // clear out some possible cached properties to prevent
       // misleading warnings
-      for(ROMol::AtomIterator atomIt = (*molIter)->beginAtoms();
-          atomIt != (*molIter)->endAtoms(); ++atomIt){
-        if((*atomIt)->hasProp("_QueryFormalCharge"))
-          (*atomIt)->clearProp("_QueryFormalCharge");
-        if((*atomIt)->hasProp("_QueryHCount"))
-          (*atomIt)->clearProp("_QueryHCount");
-        if((*atomIt)->hasProp("_QueryMass"))
-          (*atomIt)->clearProp("_QueryMass");
-        if((*atomIt)->hasProp("_QueryIsotope"))
-          (*atomIt)->clearProp("_QueryIsotope");
+      for(ROMol::AtomIterator atomIt=(*molIter)->beginAtoms();
+          atomIt!=(*molIter)->endAtoms();++atomIt){
+        if((*atomIt)->hasProp(common_properties::_QueryFormalCharge))
+          (*atomIt)->clearProp(common_properties::_QueryFormalCharge);
+        if((*atomIt)->hasProp(common_properties::_QueryHCount))
+          (*atomIt)->clearProp(common_properties::_QueryHCount);
+        if((*atomIt)->hasProp(common_properties::_QueryMass))
+          (*atomIt)->clearProp(common_properties::_QueryMass);
+        if((*atomIt)->hasProp(common_properties::_QueryIsotope))
+          (*atomIt)->clearProp(common_properties::_QueryIsotope);
       }
-      bool thisMolMapped = false;
-      for(ROMol::AtomIterator atomIt = (*molIter)->beginAtoms();
-          atomIt != (*molIter)->endAtoms(); ++atomIt){
-        if((*atomIt)->hasProp("molAtomMapNumber")){
-          thisMolMapped = true;
-          int mapNum;
-          (*atomIt)->getProp("molAtomMapNumber", mapNum);
-          bool seenAlready = std::find(productNumbersSeen.begin(),
-              productNumbersSeen.end(), mapNum) != productNumbersSeen.end();
+      bool thisMolMapped=false;
+      for(ROMol::AtomIterator atomIt=(*molIter)->beginAtoms();
+          atomIt!=(*molIter)->endAtoms();++atomIt){
+        int mapNum;
+        if((*atomIt)->getPropIfPresent(common_properties::molAtomMapNumber, mapNum)){
+          thisMolMapped=true;
+          bool seenAlready=std::find(productNumbersSeen.begin(),
+                                     productNumbersSeen.end(),mapNum)!=productNumbersSeen.end();
           if(seenAlready){
             if(!silent){
-              BOOST_LOG(rdErrorLog) << "product atom-mapping number " << mapNum
-                  << " found multiple times.\n";
+              BOOST_LOG(rdWarningLog)<<"product atom-mapping number "<<mapNum<<" found multiple times.\n";
+            }
+            numWarnings++;
+            // ------------
+            //   Always check to see if the atoms connectivity changes independent if it is mapped multiple times
+            // ------------
+            const Atom *rAtom=reactingAtoms[mapNum];
+            CHECK_INVARIANT(rAtom,"missing atom");
+            if(rAtom->getDegree()!=(*atomIt)->getDegree()){
+              (*atomIt)->setProp(common_properties::_ReactionDegreeChanged,1);
             }
             numErrors++;
             res = false;
@@ -1141,10 +1146,10 @@ namespace RDKit {
             // ------------
             //   The atom is mapped, check to see if its connectivity changes
             // ------------
-            const Atom *rAtom = reactingAtoms[mapNum];
-            CHECK_INVARIANT(rAtom, "missing atom");
-            if(rAtom->getDegree() != (*atomIt)->getDegree()){
-              (*atomIt)->setProp("_ReactionDegreeChanged", 1);
+            const Atom *rAtom=reactingAtoms[mapNum];
+            CHECK_INVARIANT(rAtom,"missing atom");
+            if(rAtom->getDegree()!=(*atomIt)->getDegree()){
+              (*atomIt)->setProp(common_properties::_ReactionDegreeChanged,1);
             }
           }
         }
@@ -1162,54 +1167,51 @@ namespace RDKit {
                 query->beginChildren(); qIter != query->endChildren(); ++qIter){
               queries.push_back((*qIter).get());
             }
-            if(query->getDescription() == "AtomFormalCharge"){
-              if((*atomIt)->hasProp("_QueryFormalCharge")){
+            if(query->getDescription()=="AtomFormalCharge"){
+              if((*atomIt)->hasProp(common_properties::_QueryFormalCharge)){
                 if(!silent){
                   BOOST_LOG(rdWarningLog) << "atom " << (*atomIt)->getIdx()
                       << " in product " << molIdx
                       << " has multiple charge specifications.\n";
                 }
                 numWarnings++;
-              } else{
-                (*atomIt)->setProp("_QueryFormalCharge",
-                    ((const ATOM_EQUALS_QUERY *) query)->getVal());
+              } else {
+                (*atomIt)->setProp(common_properties::_QueryFormalCharge,
+                                   ((const ATOM_EQUALS_QUERY *)query)->getVal());
               }
-            } else if(query->getDescription() == "AtomHCount"){
-              if((*atomIt)->hasProp("_QueryHCount")){
+            } else if(query->getDescription()=="AtomHCount"){
+              if((*atomIt)->hasProp(common_properties::_QueryHCount)){
                 if(!silent){
                   BOOST_LOG(rdWarningLog) << "atom " << (*atomIt)->getIdx()
                       << " in product " << molIdx
                       << " has multiple H count specifications.\n";
                 }
                 numWarnings++;
-              } else{
-                (*atomIt)->setProp("_QueryHCount",
-                    ((const ATOM_EQUALS_QUERY *) query)->getVal());
+              } else {
+                (*atomIt)->setProp(common_properties::_QueryHCount,
+                                   ((const ATOM_EQUALS_QUERY *)query)->getVal());
               }
-            } else if(query->getDescription() == "AtomMass"){
-              if((*atomIt)->hasProp("_QueryMass")){
-                if(!silent){
-                  BOOST_LOG(rdWarningLog) << "atom " << (*atomIt)->getIdx()
-                      << " in product " << molIdx
-                      << " has multiple mass specifications.\n";
+            } else if(query->getDescription()=="AtomMass"){
+              if((*atomIt)->hasProp(common_properties::_QueryMass)){
+                if(!silent) {
+                  BOOST_LOG(rdWarningLog)<<"atom "<<(*atomIt)->getIdx()<<" in product " 
+                                         << molIdx << " has multiple mass specifications.\n";
                 }
                 numWarnings++;
-              } else{
-                (*atomIt)->setProp("_QueryMass",
-                    ((const ATOM_EQUALS_QUERY *) query)->getVal()
-                        / massIntegerConversionFactor);
+              } else {
+                (*atomIt)->setProp(common_properties::_QueryMass,
+                                   ((const ATOM_EQUALS_QUERY *)query)->getVal()/massIntegerConversionFactor);
               }
-            } else if(query->getDescription() == "AtomIsotope"){
-              if((*atomIt)->hasProp("_QueryIsotope")){
-                if(!silent){
-                  BOOST_LOG(rdWarningLog) << "atom " << (*atomIt)->getIdx()
-                      << " in product " << molIdx
-                      << " has multiple isotope specifications.\n";
+            } else if(query->getDescription()=="AtomIsotope"){
+              if((*atomIt)->hasProp(common_properties::_QueryIsotope)){
+                if(!silent) {
+                  BOOST_LOG(rdWarningLog)<<"atom "<<(*atomIt)->getIdx()<<" in product " 
+                                         << molIdx << " has multiple isotope specifications.\n";
                 }
                 numWarnings++;
-              } else{
-                (*atomIt)->setProp("_QueryIsotope",
-                    ((const ATOM_EQUALS_QUERY *) query)->getVal());
+              } else {
+                (*atomIt)->setProp(common_properties::_QueryIsotope,
+                                   ((const ATOM_EQUALS_QUERY *)query)->getVal());
               }
             }
           }
@@ -1316,7 +1318,7 @@ namespace RDKit {
   }
 
   bool isMoleculeAgentOfReaction(const ChemicalReaction &rxn,const ROMol &mol){
-  unsigned int ignore;
+    unsigned int ignore;
     return isMoleculeAgentOfReaction(rxn,mol,ignore);
   }
 
@@ -1343,8 +1345,11 @@ namespace RDKit {
     }
   }
 
+  
+
   VECT_INT_VECT getReactingAtoms(const ChemicalReaction &rxn,
       bool mappedAtomsOnly){
+
     if(!rxn.isInitialized()){
       throw ChemicalReactionException("initMatchers() must be called first");
     }
@@ -1367,7 +1372,8 @@ namespace RDKit {
       while(atItP.first != atItP.second){
         const Atom *oAtom = (**rIt)[*(atItP.first++)].get();
         // unmapped atoms are definitely changing:
-        if(!oAtom->hasProp("molAtomMapNumber")){
+	    int mapNum;
+        if(!oAtom->getPropIfPresent(common_properties::molAtomMapNumber, mapNum)){
           if(!mappedAtomsOnly){
             resIt->push_back(oAtom->getIdx());
           }
@@ -1375,6 +1381,7 @@ namespace RDKit {
           // but mapped ones require more careful consideration
           int mapNum;
           oAtom->getProp("molAtomMapNumber", mapNum);
+
           // if this is found in a reactant:
           if(mappedProductAtoms.find(mapNum) != mappedProductAtoms.end()){
             if(isChangedAtom(*oAtom, *(mappedProductAtoms[mapNum]), mapNum,

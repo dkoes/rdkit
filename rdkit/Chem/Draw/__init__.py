@@ -140,6 +140,40 @@ def MolToImage(mol, size=(300,300), kekulize=True, wedgeBonds=True,
     canvas.flush()
     return img
 
+
+
+def MolToJSON(mol, size=(300,300), kekulize=True, wedgeBonds=True,
+               fitImage=False, options=None, **kwargs):
+  if not mol:
+    raise ValueError,'Null molecule provided'
+    
+  from jsonCanvas import Canvas
+  canvas = Canvas(size=size)
+  
+  if options is None:
+    options = DrawingOptions()
+  if fitImage:
+      options.dotsPerAngstrom = int(min(size) / 10)
+  options.wedgeDashedBonds = wedgeBonds
+  drawer = MolDrawing(canvas=canvas,drawingOptions=options)
+
+  if kekulize:
+    from rdkit import Chem
+    mol = Chem.Mol(mol.ToBinary())
+    Chem.Kekulize(mol)
+    
+  if not mol.GetNumConformers():
+    from rdkit.Chem import AllChem
+    AllChem.Compute2DCoords(mol)
+  
+  drawer.AddMol(mol,**kwargs)
+  drawer.AddLegend(kwargs.get('legend', ''))
+
+  canvas.flush()
+  return canvas.json               
+
+
+
 def MolToFile(mol,fileName,size=(300,300),kekulize=True, wedgeBonds=True,
               imageType=None, fitImage=False, options=None, **kwargs):
   """ Generates a drawing of a molecule and writes it to a file

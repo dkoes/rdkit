@@ -11,7 +11,7 @@
 #include "UniformGrid3D.h"
 #include <DataStructs/DiscreteValueVect.h>
 #include <RDGeneral/StreamOps.h>
-#include <RDBoost/Exceptions.h>
+#include <RDGeneral/Exceptions.h>
 #include "point.h"
 #include <fstream>
 #include <boost/cstdint.hpp>
@@ -58,7 +58,7 @@ namespace RDGeom {
     }
   }
 
-  UniformGrid3D::UniformGrid3D(const std::string pkl) {
+  UniformGrid3D::UniformGrid3D(const std::string &pkl) {
     dp_storage=0;
     this->initFromText(pkl.c_str(),pkl.size());
   }
@@ -396,7 +396,7 @@ namespace RDGeom {
     }
   }
 
-  void writeGridToFile(const UniformGrid3D &grid, std::string filename) {
+  void writeGridToFile(const UniformGrid3D &grid, const std::string &filename) {
     //std::ofstream ofStrm(filename.c_str());
     std::ofstream *ofStrm = new std::ofstream(filename.c_str());
     std::ostream *oStrm =  static_cast<std::ostream *>(ofStrm);

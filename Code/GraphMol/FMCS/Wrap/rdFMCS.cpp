@@ -15,11 +15,15 @@
 namespace python = boost::python;
 
 namespace RDKit {
+   
+
     MCSResult *FindMCSWrapper(python::object mols,bool maximizeBonds,double threshold,
                               unsigned timeout,bool verbose,
                               bool matchValences,
                               bool ringMatchesRingOnly,bool completeRingsOnly,
-                              AtomComparator atomComp, BondComparator bondComp) {
+                              bool matchChiralTag,
+                              AtomComparator atomComp, BondComparator bondComp,
+                              std::string seedSmarts) {
         std::vector<ROMOL_SPTR> ms;
         unsigned int nElems=python::extract<unsigned int>(mols.attr("__len__")());
         ms.resize(nElems);
@@ -27,10 +31,44 @@ namespace RDKit {
             if(!mols[i]) throw_value_error("molecule is None");
             ms[i] = python::extract<ROMOL_SPTR>(mols[i]);
         }
+        MCSParameters p;
+        p.Threshold = threshold;
+        p.MaximizeBonds=maximizeBonds;
+        p.Timeout = timeout;
+        p.Verbose = verbose;
+        p.InitialSeed = seedSmarts;
+        p.AtomCompareParameters.MatchValences = matchValences;
+        p.AtomCompareParameters.MatchChiralTag = matchChiralTag;
+        switch(atomComp) {
+        case AtomCompareAny:
+            p.AtomTyper=MCSAtomCompareAny;
+            break;
+        case AtomCompareElements:
+            p.AtomTyper=MCSAtomCompareElements;
+            break;
+        case AtomCompareIsotopes:
+            p.AtomTyper=MCSAtomCompareIsotopes;
+            break;
+        }
+        switch(bondComp) {
+        case BondCompareAny:
+            p.BondTyper=MCSBondCompareAny;
+            break;
+        case BondCompareOrder:
+            p.BondTyper=MCSBondCompareOrder;
+            break;
+        case BondCompareOrderExact:
+            p.BondTyper=MCSBondCompareOrderExact;
+            break;
+        }
+        p.BondCompareParameters.RingMatchesRingOnly=ringMatchesRingOnly;
+        p.BondCompareParameters.CompleteRingsOnly=completeRingsOnly;
 
-        MCSResult *res= new MCSResult(findMCS (ms,maximizeBonds,threshold,timeout,verbose,
-                                               matchValences,ringMatchesRingOnly,completeRingsOnly,
-                                               atomComp,bondComp));
+        MCSResult *res=0;
+        {
+          NOGIL gil;
+          res = new MCSResult(findMCS(ms,&p));
+        }
         return res;
     }
 }
@@ -74,8 +112,10 @@ BOOST_PYTHON_MODULE(rdFMCS) {
                  python::arg("matchValences")=false,
                  python::arg("ringMatchesRingOnly")=false,
                  python::arg("completeRingsOnly")=false,
+                 python::arg("matchChiralTag")=false,
                  python::arg("atomCompare")=RDKit::AtomCompareElements,
-                 python::arg("bondCompare")=RDKit::BondCompareOrder
+                 python::arg("bondCompare")=RDKit::BondCompareOrder,
+                 python::arg("seedSmarts")=""
                 ),
                 python::return_value_policy<python::manage_new_object>(),
                 docString.c_str());

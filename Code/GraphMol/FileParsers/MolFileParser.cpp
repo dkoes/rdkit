@@ -393,8 +393,6 @@ namespace RDKit{
               atom->setIsotope(isotope);
               spos += 4;
             }
-          } else {
-            atom->setMass(PeriodicTable::getTable()->getAtomicWeight(atom->getAtomicNum()));
           }
         }
         catch (boost::bad_lexical_cast &) {
@@ -1045,7 +1043,6 @@ namespace RDKit{
         res->setIsotope(3);
       } else {
         res->setAtomicNum(PeriodicTable::getTable()->getAtomicNumber(symb));
-        res->setMass(PeriodicTable::getTable()->getAtomicWeight(res->getAtomicNum()));
       }
     
       //res->setPos(pX,pY,pZ);
@@ -1063,8 +1060,6 @@ namespace RDKit{
           BOOST_LOG(rdWarningLog) << " atom "<<res->getIdx()<<" has a negative isotope offset. line:  "<<line<<std::endl;
         }
         res->setIsotope(dIso);
-        res->setMass(PeriodicTable::getTable()->getMassForIsotope(res->getAtomicNum(),
-                                                                  dIso));
 	res->setProp(common_properties::_hasMassQuery,true);
       }
     
@@ -1521,7 +1516,6 @@ namespace RDKit{
           res->setIsotope(3);
         } else {
           res = new Atom(PeriodicTable::getTable()->getAtomicNumber(token));
-          res->setMass(PeriodicTable::getTable()->getAtomicWeight(res->getAtomicNum()));
         }
       }
       
@@ -2447,7 +2441,7 @@ namespace RDKit{
   //  Read a molecule from a file
   //
   //------------------------------------------------
-  RWMol *MolFileToMol(std::string fName, bool sanitize, bool removeHs,bool strictParsing){
+  RWMol *MolFileToMol(const std::string &fName, bool sanitize, bool removeHs,bool strictParsing){
     std::ifstream inStream(fName.c_str());
     if (!inStream || (inStream.bad()) ) {
       std::ostringstream errout;

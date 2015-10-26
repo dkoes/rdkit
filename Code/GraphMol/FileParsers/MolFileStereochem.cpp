@@ -16,7 +16,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include <algorithm>
 #include "MolFileStereochem.h"
-#include <GraphMol/RankAtoms.h>
+#include <RDGeneral/Ranking.h>
 
 namespace RDKit {
   typedef std::list<double> DOUBLE_LIST;
@@ -361,13 +361,31 @@ namespace RDKit {
       MolOps::findSSSR(mol);
     }
 
-    // start by ranking atoms by the number of chiral neighbors they have:
     static int noNbrs=100;
     INT_VECT nChiralNbrs(mol.getNumAtoms(),noNbrs);
+
+    // start by looking for bonds that are already wedged
+    for (ROMol::ConstBondIterator cbi = mol.beginBonds();
+         cbi != mol.endBonds(); ++cbi) {
+      const Bond *bond=*cbi;
+      if(bond->getBondDir()==Bond::BEGINWEDGE ||
+         bond->getBondDir()==Bond::BEGINDASH  ||
+         bond->getBondDir()==Bond::UNKNOWN
+         ){
+        nChiralNbrs[bond->getBeginAtomIdx()] = noNbrs+1;
+        //std::cerr<<"skip: "<<bond->getBeginAtomIdx()<<std::endl;
+      }
+    }
+    
+    // now rank atoms by the number of chiral neighbors they have:
     bool chiNbrs=false;
     for (ROMol::ConstAtomIterator cai = mol.beginAtoms();
          cai != mol.endAtoms(); ++cai) {
       const Atom *at=*cai;
+      if(nChiralNbrs[at->getIdx()]>noNbrs){
+        //std::cerr<<" SKIPPING1: "<<at->getIdx()<<std::endl;
+        continue;
+      }
       Atom::ChiralType type = at->getChiralTag();
       if (type != Atom::CHI_TETRAHEDRAL_CW && type != Atom::CHI_TETRAHEDRAL_CCW) continue;
       nChiralNbrs[at->getIdx()]=0;
@@ -385,7 +403,7 @@ namespace RDKit {
     std::vector< unsigned int > indices(mol.getNumAtoms());
     for(unsigned int i=0;i<mol.getNumAtoms();++i) indices[i]=i; 
     if(chiNbrs){
-      std::sort(indices.begin(),indices.end(),RankAtoms::argless<INT_VECT>(nChiralNbrs));
+      std::sort(indices.begin(),indices.end(),Rankers::argless<INT_VECT>(nChiralNbrs));
     }
 #if 0
     std::cerr<<"  nbrs: ";
@@ -404,6 +422,10 @@ namespace RDKit {
     // we use the orders calculated above to determine which order to do the wedging
     INT_MAP_INT res;
     BOOST_FOREACH(unsigned int idx,indices){
+      if(nChiralNbrs[idx]>noNbrs){
+        //std::cerr<<" SKIPPING2: "<<idx<<std::endl;
+        continue; // already have a wedged bond here
+      }
       const Atom *atom=mol.getAtomWithIdx(idx);
       Atom::ChiralType type = atom->getChiralTag();
       // the indices are ordered such that all chiral atoms come first. If
@@ -424,7 +446,7 @@ namespace RDKit {
           int nbrScore=0;
           // prefer neighbors that are nonchiral or have as few chiral neighbors as possible:
           int oIdx=bond->getOtherAtomIdx(idx);
-          if(nChiralNbrs[oIdx]!=noNbrs){
+          if(nChiralNbrs[oIdx]<noNbrs){
             // the counts are negative, so we have to subtract them off
             nbrScore -= 10*nChiralNbrs[oIdx];
           }
@@ -441,7 +463,7 @@ namespace RDKit {
       // as it seems like it is. (I'm going into this knowing that it's bound to 
       // happen; I'll kick myself and do the hard solution at that point.)
       CHECK_INVARIANT(nbrScores.size(),"no eligible neighbors for chiral center");
-      std::sort(nbrScores.begin(),nbrScores.end(),RankAtoms::pairLess<int,int>());
+      std::sort(nbrScores.begin(),nbrScores.end(),Rankers::pairLess<int,int>());
       res[nbrScores[0].second] = idx;
     }
     return res;
@@ -459,7 +481,7 @@ namespace RDKit {
     const ROMol *mol=&(bond->getOwningMol());
     PRECONDITION(mol,"no mol");
 
-    Bond::BondDir res=Bond::NONE;
+    Bond::BondDir res=bond->getBondDir();
     if(!conf){
       return res;
     }

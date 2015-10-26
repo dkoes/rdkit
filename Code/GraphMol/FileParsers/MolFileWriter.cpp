@@ -15,7 +15,7 @@
 #include "MolFileStereochem.h"
 #include <RDGeneral/Invariant.h>
 #include <GraphMol/RDKitQueries.h>
-#include <GraphMol/RankAtoms.h>
+#include <RDGeneral/Ranking.h>
 #include <vector>
 #include <algorithm>
 #include <fstream>
@@ -278,12 +278,12 @@ namespace RDKit{
         ss<<"M  ALS "<<std::setw(3)<<(*atomIt)->getIdx()+1<<" ";
         ss<<std::setw(2)<<vals.size();
         if((*atomIt)->getQuery()->getNegation()){
-          ss<<" T";
+          ss<<" T ";
         } else {
-          ss<<" F";
+          ss<<" F ";
         }
         BOOST_FOREACH(int val,vals){
-          ss<<" "<<std::setw(3)<<std::left<<(PeriodicTable::getTable()->getElementSymbol(val));
+          ss<<std::setw(4)<<std::left<<(PeriodicTable::getTable()->getElementSymbol(val));
         }
         ss<<"\n";
       }
@@ -461,7 +461,7 @@ namespace RDKit{
         vs.push_back(std::make_pair(idx,v));
         ++nbrIdx;
       }
-      std::sort(vs.begin(),vs.end(),RankAtoms::pairLess<unsigned int,RDGeom::Point3D>());
+      std::sort(vs.begin(),vs.end(),Rankers::pairLess<unsigned int,RDGeom::Point3D>());
       double vol;
       if(vs.size()==4) {
         vol = vs[0].second.crossProduct(vs[1].second).dotProduct(vs[3].second);
@@ -633,7 +633,7 @@ namespace RDKit{
       // the mol file
       if ((dirCode == 1) || (dirCode == 6)) {
         INT_MAP_INT_CI wbi = wedgeBonds.find(bond->getIdx());
-        if (static_cast<unsigned int>(wbi->second) != bond->getBeginAtomIdx()) {
+        if (wbi != wedgeBonds.end() && static_cast<unsigned int>(wbi->second) != bond->getBeginAtomIdx()) {
           reverse = true;
         }
       }
@@ -1060,7 +1060,7 @@ namespace RDKit{
   //  Dump a molecule to a file
   //
   //------------------------------------------------
-  void MolToMolFile(const ROMol &mol,std::string fName,bool includeStereo, int confId, bool kekulize,
+  void MolToMolFile(const ROMol &mol,const std::string &fName,bool includeStereo, int confId, bool kekulize,
                     bool forceV3000){
     std::ofstream *outStream = new std::ofstream(fName.c_str());
     if (!outStream || !(*outStream) || outStream->bad() ) {

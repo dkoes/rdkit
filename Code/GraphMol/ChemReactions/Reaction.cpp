@@ -375,11 +375,6 @@ namespace RDKit {
           newAtom->getProp("_QueryHCount", val);
           newAtom->setNumExplicitHs(val);
         }
-        if(newAtom->hasProp("_QueryMass")){
-          int val;
-          newAtom->getProp("_QueryMass", val);
-          newAtom->setMass(val);
-        }
         if(newAtom->hasProp("_QueryIsotope")){
           int val;
           newAtom->getProp("_QueryIsotope", val);
@@ -1323,8 +1318,9 @@ namespace RDKit {
   }
 
   void addRecursiveQueriesToReaction(ChemicalReaction &rxn,
-      const std::map<std::string, ROMOL_SPTR> &queries,std::string propName,
-      std::vector<std::vector<std::pair<unsigned int, std::string> > > *reactantLabels){
+                  const std::map<std::string,ROMOL_SPTR> &queries,
+                  const std::string &propName,
+                  std::vector<std::vector<std::pair<unsigned int,std::string> > > *reactantLabels) {
     if(!rxn.isInitialized()){
       throw ChemicalReactionException("initMatchers() must be called first");
     }

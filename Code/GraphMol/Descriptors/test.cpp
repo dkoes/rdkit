@@ -1585,28 +1585,46 @@ void testMQNs(){
   BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
   BOOST_LOG(rdErrorLog) << "    Test MQN" << std::endl;
 
-  unsigned int tgt[42]={98,  0,  4,  0,  0,  1,  0,  3,  9,  5,  4,  0, 29,  3,  0, 66, 35,
-                      0, 25, 30, 21,  2,  2,  0,  0,  6, 12,  6,  0, 70, 26,  0,  0,  0,
-                      2, 16,  0,  0,  0,  0, 10,  5};
+  {
+    unsigned int tgt[42]={98,  0,  4,  0,  0,  1,  0,  3,  9,  5,  4,  124, 29,  3,  0, 66, 35,
+                          0, 25, 30, 21,  2,  2,  0,  0,  6, 12,  6,  0, 70, 26,  0,  0,  0,
+                          2, 16,  0,  0,  0,  0, 10,  5};
 
-  std::vector<unsigned int> accum(42,0);
+    std::vector<unsigned int> accum(42,0);
   
-  std::string fName = getenv("RDBASE");
-  fName += "/Code/GraphMol/Descriptors/test_data/aid466.trunc.sdf";
-  SDMolSupplier suppl(fName);
-  while(!suppl.atEnd()){
-    ROMol *mol=suppl.next();
+    std::string fName = getenv("RDBASE");
+    fName += "/Code/GraphMol/Descriptors/test_data/aid466.trunc.sdf";
+    SDMolSupplier suppl(fName);
+    while(!suppl.atEnd()){
+      ROMol *mol=suppl.next();
+      TEST_ASSERT(mol);
+      std::vector<unsigned int> v = calcMQNs(*mol);
+      TEST_ASSERT(v.size()==42);
+      for(unsigned int i=0;i<42;++i) accum[i]+=v[i];
+      delete mol;
+    }
+    for(unsigned int i=0;i<42;++i){
+      if(accum[i] != tgt[i]){
+        std::cerr<<" !! "<<i<<" "<<accum[i]<<"!="<<tgt[i]<<std::endl;
+      }
+      TEST_ASSERT(accum[i]==tgt[i]);
+    }
+  }
+  { // github #623
+    ROMol *mol;
+    mol = SmilesToMol("CC*");
     TEST_ASSERT(mol);
     std::vector<unsigned int> v = calcMQNs(*mol);
-    TEST_ASSERT(v.size()==42);
-    for(unsigned int i=0;i<42;++i) accum[i]+=v[i];
+    TEST_ASSERT(v[11]==2);
     delete mol;
   }
-  for(unsigned int i=0;i<42;++i){
-    if(accum[i] != tgt[i]){
-      std::cerr<<" !! "<<i<<accum[i]<<"!="<<tgt[i]<<std::endl;
-    }
-    TEST_ASSERT(accum[i]==tgt[i]);
+  { // github #623
+    ROMol *mol;
+    mol = SmilesToMol("[2H][2H]");
+    TEST_ASSERT(mol);
+    std::vector<unsigned int> v = calcMQNs(*mol);
+    TEST_ASSERT(v[11]==0);
+    delete mol;
   }
   BOOST_LOG(rdErrorLog) << "  done" << std::endl;
 }
@@ -1678,6 +1696,167 @@ void testGitHubIssue92(){
   BOOST_LOG(rdErrorLog) << "  done" << std::endl;
 }
 
+void testGitHubIssue463(){
+  BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
+  BOOST_LOG(rdErrorLog) << "    Test Github362: order dependence  in Kier-Hall descriptors." << std::endl;
+
+  { // start with the hall-kier delta values:
+    RWMol *mol;
+    mol = SmilesToMol("O=C(Nc1nccs1)NC(C1CC1)C");
+    TEST_ASSERT(mol);
+    TEST_ASSERT(mol->getNumAtoms()==14);
+    unsigned int order[]={0, 11, 8, 7, 2, 4, 5, 13, 10, 12, 9, 3, 1, 6};
+    std::vector<unsigned int> nVect(order,order+sizeof(order)/sizeof(unsigned int));
+    ROMol *nm=MolOps::renumberAtoms(*mol,nVect);
+    TEST_ASSERT(nm);
+
+    std::vector<double> hkds(mol->getNumAtoms());
+    Descriptors::detail::hkDeltas(*mol,hkds,true);
+    std::vector<double> nhkds(mol->getNumAtoms());
+    Descriptors::detail::hkDeltas(*nm,nhkds,true);
+    
+    for(unsigned int j=0;j<mol->getNumAtoms();++j){
+      TEST_ASSERT(feq(hkds[nVect[j]],nhkds[j]));
+    }
+
+    delete mol;
+    delete nm;
+  }  
+
+  { // now chiNv values, where the problem was reported:
+
+    RWMol *mol;
+    mol = SmilesToMol("O=C(Nc1nccs1)NC(C1CC1)C");
+    TEST_ASSERT(mol);
+    TEST_ASSERT(mol->getNumAtoms()==14);
+    unsigned int order[]={0, 11, 8, 7, 2, 4, 5, 13, 10, 12, 9, 3, 1, 6};
+    std::vector<unsigned int> nVect(order,order+sizeof(order)/sizeof(unsigned int));
+    ROMol *nm=MolOps::renumberAtoms(*mol,nVect);
+    TEST_ASSERT(nm);
+
+    double cv=calcChi3v(*mol);
+    double ncv=calcChi3v(*nm);    
+    
+    TEST_ASSERT(feq(cv,ncv));
+
+    delete mol;
+    delete nm;
+  }  
+
+  { // now chiNn values, where the problem was reported:
+
+    RWMol *mol;
+    mol = SmilesToMol("O=C(Nc1nccs1)NC(C1CC1)C");
+    TEST_ASSERT(mol);
+    TEST_ASSERT(mol->getNumAtoms()==14);
+    unsigned int order[]={0, 11, 8, 7, 2, 4, 5, 13, 10, 12, 9, 3, 1, 6};
+    std::vector<unsigned int> nVect(order,order+sizeof(order)/sizeof(unsigned int));
+    ROMol *nm=MolOps::renumberAtoms(*mol,nVect);
+    TEST_ASSERT(nm);
+
+    double cv=calcChi3n(*mol);
+    double ncv=calcChi3n(*nm);    
+    
+    TEST_ASSERT(feq(cv,ncv));
+
+    delete mol;
+    delete nm;
+  }  
+
+  { // the root cause was handling of rings
+    RWMol *mol;
+    mol = SmilesToMol("C1CC1");
+    TEST_ASSERT(mol);
+    TEST_ASSERT(mol->getNumAtoms()==3);
+    std::vector<double> hkds(mol->getNumAtoms());
+    Descriptors::detail::hkDeltas(*mol,hkds,true);
+
+    double cv=calcChi3v(*mol);
+    TEST_ASSERT(feq(hkds[0],hkds[1]));
+    TEST_ASSERT(feq(hkds[1],hkds[2]));
+    TEST_ASSERT(feq(cv,hkds[0]*hkds[0]*hkds[0]));
+      
+
+    delete mol;
+  }  
+
+  BOOST_LOG(rdErrorLog) << "  done" << std::endl;
+}
+
+void testSpiroAndBridgeheads(){
+  BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
+  BOOST_LOG(rdErrorLog) << "    Test calculation of spiro and bridgehead counts." << std::endl;
+
+  { 
+    RWMol *mol;
+    mol = SmilesToMol("C1CC2CCC1CC2");
+    TEST_ASSERT(mol);
+
+    unsigned int nSpiro = Descriptors::calcNumSpiroAtoms(*mol);
+    TEST_ASSERT(nSpiro==0);
+    
+    unsigned int nBridgehead = Descriptors::calcNumBridgeheadAtoms(*mol);
+    TEST_ASSERT(nBridgehead==2);
+    
+    delete mol;
+  }  
+
+  { 
+    RWMol *mol;
+    mol = SmilesToMol("C1CCC2(C1)CC1CCC2CC1");
+    TEST_ASSERT(mol);
+
+    unsigned int nSpiro = Descriptors::calcNumSpiroAtoms(*mol);
+    TEST_ASSERT(nSpiro==1);
+    
+    unsigned int nBridgehead = Descriptors::calcNumBridgeheadAtoms(*mol);
+    TEST_ASSERT(nBridgehead==2);
+    
+    delete mol;
+  }  
+
+  { 
+    RWMol *mol;
+    mol = SmilesToMol("CC1(C)CC2(C)CCC1(C)CC2");
+    TEST_ASSERT(mol);
+
+    unsigned int nSpiro = Descriptors::calcNumSpiroAtoms(*mol);
+    TEST_ASSERT(nSpiro==0);
+    
+    unsigned int nBridgehead = Descriptors::calcNumBridgeheadAtoms(*mol);
+    TEST_ASSERT(nBridgehead==2);
+    
+    delete mol;
+  }  
+
+  { // test the atoms parameter
+    RWMol *mol;
+    mol = SmilesToMol("C1CCC2(C1)CC1CCC2CC1");
+    TEST_ASSERT(mol);
+
+    std::vector<unsigned int> atoms;
+
+    unsigned int nSpiro = Descriptors::calcNumSpiroAtoms(*mol,&atoms);
+    TEST_ASSERT(nSpiro==1);
+    TEST_ASSERT(atoms.size()==nSpiro);
+    TEST_ASSERT(std::find(atoms.begin(),atoms.end(),3) != atoms.end());
+
+    atoms.clear();
+    unsigned int nBridgehead = Descriptors::calcNumBridgeheadAtoms(*mol,&atoms);
+    TEST_ASSERT(nBridgehead==2);
+    TEST_ASSERT(atoms.size()==nBridgehead);
+    TEST_ASSERT(std::find(atoms.begin(),atoms.end(),9) != atoms.end());
+    TEST_ASSERT(std::find(atoms.begin(),atoms.end(),6) != atoms.end());
+    
+    delete mol;
+  }  
+
+
+
+  BOOST_LOG(rdErrorLog) << "  done" << std::endl;
+}
+
+
 //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 //
 //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -1708,8 +1887,10 @@ int main(){
   testRingDescriptors();
   testMiscCountDescriptors();
   testMQNs();
-#endif
   testGitHubIssue56();
   testGitHubIssue92();
+#endif
+  testGitHubIssue463();
+  testSpiroAndBridgeheads();
 
 }

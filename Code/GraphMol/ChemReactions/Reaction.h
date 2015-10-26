@@ -189,9 +189,14 @@ namespace RDKit{
       map multiple times onto its reactant. This leads to multiple possible result
       sets.
     */
-    std::vector<MOL_SPTR_VECT> runReactants(const MOL_SPTR_VECT reactants) const;
+    std::vector<MOL_SPTR_VECT> runReactants(const MOL_SPTR_VECT reactants) const;    
     std::vector<MOL_SPTR_VECT> runReactants(const MOL_SPTR_VECT reactants,
         VectVectMatchVectType& matchesPerProduct) const;
+
+    const MOL_SPTR_VECT & getReactants() const { return this->m_reactantTemplates; }
+    const MOL_SPTR_VECT & getAgents()    const { return this->m_agentTemplates; }
+    const MOL_SPTR_VECT & getProducts()  const { return this->m_productTemplates; }
+
     MOL_SPTR_VECT::const_iterator beginReactantTemplates() const {
         return this->m_reactantTemplates.begin();    
     }
@@ -377,7 +382,7 @@ namespace RDKit{
    */  
   void addRecursiveQueriesToReaction(ChemicalReaction &rxn,
                                      const std::map<std::string,ROMOL_SPTR> &queries,
-		  std::string propName,
+		  const std::string &propName,
 		  std::vector<std::vector<std::pair<unsigned int,std::string> > > *reactantLabels=NULL);
 
 } // end of RDKit namespace

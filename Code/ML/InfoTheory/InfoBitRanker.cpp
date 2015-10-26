@@ -15,7 +15,7 @@
 #include <iomanip>
 #include <fstream>
 #include <RDGeneral/FileParseException.h>
-#include <RDBoost/Exceptions.h>
+#include <RDGeneral/Exceptions.h>
 #include <algorithm>
 #include <queue>
 
@@ -276,7 +276,7 @@ namespace RDInfoTheory {
     }
   }
   
-  void InfoBitRanker::writeTopBitsToFile(std::string fileName) const {
+  void InfoBitRanker::writeTopBitsToFile(const std::string &fileName) const {
     std::ofstream tmpStream(fileName.c_str());
     if ((!tmpStream) || (tmpStream.bad()) ) {
       std::ostringstream errout;

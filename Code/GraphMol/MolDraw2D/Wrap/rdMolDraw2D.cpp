@@ -40,19 +40,34 @@ namespace RDKit {
       }
       return res;
     }
+    std::map<int,double> *pyDictToDoubleMap(python::object pyo){
+      std::map<int,double> *res=NULL;
+      if(pyo){
+        res = new std::map<int,double>;
+        python::dict tDict = python::extract<python::dict>(pyo);
+        for(unsigned int i=0;i<python::extract<unsigned int>(tDict.keys().attr("__len__")());++i){
+          double r = python::extract<double>(tDict.values()[i]);
+          (*res)[python::extract<int>(tDict.keys()[i])]=r;
+        }
+      }
+      return res;
+    }
   }
   void drawMoleculeHelper1(MolDraw2D &self,
                           const ROMol &mol ,
                           python::object highlight_atoms,
                           python::object highlight_atom_map,
+                          python::object highlight_atom_radii,
                           int confId=-1){
     std::vector<int> *highlightAtoms=pythonObjectToVect(highlight_atoms,static_cast<int>(mol.getNumAtoms()));
     std::map<int,DrawColour> *ham=pyDictToColourMap(highlight_atom_map);
+    std::map<int,double> *har=pyDictToDoubleMap(highlight_atom_radii);
 
-    self.drawMolecule(mol,highlightAtoms,ham,confId);
+    self.drawMolecule(mol,highlightAtoms,ham,har,confId);
     
     delete highlightAtoms;
     delete ham;
+    delete har;
   }
   void drawMoleculeHelper2(MolDraw2D &self,
                           const ROMol &mol ,
@@ -60,21 +75,33 @@ namespace RDKit {
                           python::object highlight_bonds,
                           python::object highlight_atom_map,
                           python::object highlight_bond_map,
+                          python::object highlight_atom_radii,
                           int confId=-1){
     std::vector<int> *highlightAtoms=pythonObjectToVect(highlight_atoms,static_cast<int>(mol.getNumAtoms()));
     std::vector<int> *highlightBonds=pythonObjectToVect(highlight_bonds,static_cast<int>(mol.getNumBonds()));
     // FIX: support these
     std::map<int,DrawColour> *ham=pyDictToColourMap(highlight_atom_map);
     std::map<int,DrawColour> *hbm=pyDictToColourMap(highlight_bond_map);
+    std::map<int,double> *har=pyDictToDoubleMap(highlight_atom_radii);
 
-    self.drawMolecule(mol,highlightAtoms,highlightBonds,ham,hbm,confId);
+    self.drawMolecule(mol,highlightAtoms,highlightBonds,ham,hbm,har,confId);
     
     delete highlightAtoms;
     delete highlightBonds;
     delete ham;
     delete hbm;
+    delete har;
   }
 
+
+#ifdef RDK_CAIRO_BUILD
+  python::object getCairoDrawingText(const RDKit::MolDraw2DCairo &self){
+    std::string res=self.getDrawingText();
+    python::object retval = python::object(python::handle<>(PyBytes_FromStringAndSize(res.c_str(),res.length())));
+    return retval;
+  }
+#endif
+  
 }
 
 BOOST_PYTHON_MODULE(rdMolDraw2D) {
@@ -97,14 +124,20 @@ BOOST_PYTHON_MODULE(rdMolDraw2D) {
     .def_readwrite("atomLabels",&RDKit::MolDrawOptions::atomLabels,"maps indices to atom labels")
     .def_readwrite("continuousHighlight",&RDKit::MolDrawOptions::continuousHighlight)
     .def_readwrite("flagCloseContactsDist",&RDKit::MolDrawOptions::flagCloseContactsDist)
+    .def_readwrite("atomRegions",&RDKit::MolDrawOptions::atomRegions,"regions to outline")
+    .def_readwrite("includeAtomTags",&RDKit::MolDrawOptions::includeAtomTags,"include atom tags in output")
+    .def_readwrite("clearBackground",&RDKit::MolDrawOptions::clearBackground,"clear the background before drawing a molecule")
 
     ;
   docString="Drawer abstract base class";
   python::class_<RDKit::MolDraw2D,boost::noncopyable>("MolDraw2D",docString.c_str(),python::no_init)
+    .def("SetFontSize",&RDKit::MolDraw2D::setFontSize,"change the default font size")
+    .def("FontSize",&RDKit::MolDraw2D::fontSize,"get the default font size")
     .def("DrawMolecule",RDKit::drawMoleculeHelper1,
          (python::arg("self"),python::arg("mol"),
           python::arg("highlightAtoms")=python::object(),
           python::arg("highlightAtomColors")=python::object(),
+          python::arg("highlightAtomRadii")=python::object(),
           python::arg("confId")=-1
           ),
          "renders a molecule\n")
@@ -114,6 +147,7 @@ BOOST_PYTHON_MODULE(rdMolDraw2D) {
           python::arg("highlightBonds"),
           python::arg("highlightAtomColors")=python::object(),
           python::arg("highlightBondColors")=python::object(),
+          python::arg("highlightAtomRadii")=python::object(),
           python::arg("confId")=-1
           ),
          "renders a molecule\n")
@@ -139,7 +173,7 @@ BOOST_PYTHON_MODULE(rdMolDraw2D) {
                                                                                               python::init<int,int>())
     .def("FinishDrawing",&RDKit::MolDraw2DCairo::finishDrawing,
          "add the last bits to finish the drawing")
-    .def("GetDrawingText",&RDKit::MolDraw2DCairo::getDrawingText,
+    .def("GetDrawingText",&RDKit::getCairoDrawingText,
          "return the PNG data as a string")
     .def("WriteDrawingText",&RDKit::MolDraw2DCairo::writeDrawingText,
          "write the PNG data to the named file")

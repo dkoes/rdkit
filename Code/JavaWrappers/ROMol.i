@@ -31,6 +31,7 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 %include "std_pair.i"
+%include "std_string.i"
 %include "std_vector.i"
 %{
 #include <RDGeneral/types.h>
@@ -195,7 +196,7 @@
     return RDKit::replaceCore(*($self), coreQuery, replaceDummies, labelByIndex);
   };
 
-  void AssignAtomCIPRanks(RDKit::INT_VECT &ranks) {
+  void AssignAtomCIPRanks(RDKit::UINT_VECT &ranks) {
     RDKit::Chirality::assignAtomCIPRanks(*($self), ranks);
   };
 

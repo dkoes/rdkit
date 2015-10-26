@@ -548,6 +548,8 @@ MMFF-related methods.
 >>> AllChem.MMFFOptimizeMolecule(m2)
 0
 
+Note the calls to `Chem.AddHs()` in the examples above. By default RDKit molecules do not have H atoms explicity present in the graph, but they are important for getting realistic geometries, so they generally should be added. 
+
 With the RDKit, also multiple conformers can be generated. The option numConfs allows the user to set the number of conformers that should be generated.
 These conformers can be aligned to each other and the RMS values calculated.
 
@@ -627,8 +629,8 @@ molecules found in the :api:`rdkit.Chem.Draw` package:
 >>> ms = [x for x in suppl if x is not None]
 >>> for m in ms: tmp=AllChem.Compute2DCoords(m)
 >>> from rdkit.Chem import Draw
->>> Draw.MolToFile(ms[0],'images/cdk2_mol1.png')
->>> Draw.MolToFile(ms[1],'images/cdk2_mol2.png')
+>>> Draw.MolToFile(ms[0],'images/cdk2_mol1.o.png')
+>>> Draw.MolToFile(ms[1],'images/cdk2_mol2.o.png')
 
 Producing these images:
 
@@ -642,7 +644,7 @@ It's also possible to produce an image grid out of a set of molecules:
 
 This returns a PIL image, which can then be saved to a file:
 
->>> img.save('images/cdk2_molgrid.png')
+>>> img.save('images/cdk2_molgrid.o.png')
 
 The result looks like this:
 
@@ -659,7 +661,7 @@ aligned. This is easy enough to do:
 0
 >>> for m in subms: AllChem.GenerateDepictionMatching2DStructure(m,p)
 >>> img=Draw.MolsToGridImage(subms,molsPerRow=4,subImgSize=(200,200),legends=[x.GetProp("_Name") for x in subms])
->>> img.save('images/cdk2_molgrid.aligned.png')
+>>> img.save('images/cdk2_molgrid.aligned.o.png')
 
 
 The result looks like this:
@@ -800,7 +802,7 @@ and removing cores:
 
 >>> tmp = Chem.ReplaceCore(m1,core)
 >>> Chem.MolToSmiles(tmp)
-'[*]CCBr.[*]C(=O)O' 
+'[*]C(=O)O.[*]CCBr' 
 
 To get more detail about the sidechains (e.g. sidechain labels), use isomeric smiles:
 
@@ -838,13 +840,13 @@ into scaffolds:
 >>> m1 = cdk2mols[0]
 >>> core = MurckoScaffold.GetScaffoldForMol(m1)
 >>> Chem.MolToSmiles(core)
-'c1nc2cncnc2[nH]1'
+'c1ncc2nc[nH]c2n1'
 
 or into a generic framework:
 
 >>> fw = MurckoScaffold.MakeScaffoldGeneric(core)
 >>> Chem.MolToSmiles(fw)
-'C1CC2CCCCC2C1'
+'C1CCC2CCCC2C1'
 
 
 Maximum Common Substructure
@@ -1579,10 +1581,10 @@ method for fragmenting molecules along synthetically accessible bonds:
 >>> cdk2mols = Chem.SDMolSupplier('data/cdk2.sdf')
 >>> m1 = cdk2mols[0]
 >>> list(BRICS.BRICSDecompose(m1))
-['[4*]CC(=O)C(C)C', '[14*]c1nc(N)nc2[nH]cnc21', '[3*]O[3*]']
+['[4*]CC(=O)C(C)C', '[14*]c1nc(N)nc2[nH]cnc12', '[3*]O[3*]']
 >>> m2 = cdk2mols[20]
 >>> list(BRICS.BRICSDecompose(m2))
-['[3*]OC', '[1*]C(=O)NN(C)C', '[14*]c1[nH]nc2c1C(=O)c1c-2cccc1[16*]', '[5*]N[5*]', '[16*]c1ccc([16*])cc1']
+['[3*]OC', '[1*]C(=O)NN(C)C', '[14*]c1[nH]nc2c1C(=O)c1c([16*])cccc1-2', '[5*]N[5*]', '[16*]c1ccc([16*])cc1']
 
 Notice that RDKit BRICS implementation returns the unique fragments
 generated from a molecule and that the dummy atoms are tagged to
@@ -1598,7 +1600,7 @@ group of molecules:
 >>> len(allfrags)
 90
 >>> list(allfrags)[:5]
-['[4*]CC[NH3+]', '[14*]c1cnc[nH]1', '[16*]c1cc([16*])c2c3c(ccc2F)NC(=O)c31', '[16*]c1ccc([16*])c(Cl)c1', '[15*]C1CCCC1']
+['[4*]CC[NH3+]', '[14*]c1cnc[nH]1', '[16*]c1ccc([16*])c(Cl)c1', '[15*]C1CCCC1', '[7*]C1C(=O)Nc2ccc(S([12*])(=O)=O)cc21']
 
 The BRICS module also provides an option to apply the BRICS rules to a
 set of fragments to create new molecules:
@@ -1685,8 +1687,7 @@ with label 1:
 ...    bs.append(b.GetIdx())
 >>> nm = Chem.FragmentOnBonds(m,bs,dummyLabels=labels)
 >>> Chem.MolToSmiles(nm,True)
-'[1*]C.[1*]O.[1*]CC[1*].[10*]C1CC1.[10*]C1CC([10*])C1[10*]'
-
+'[1*]C.[1*]CC[1*].[1*]O.[10*]C1CC([10*])C1[10*].[10*]C1CC1'
 
 
 Chemical Features and Pharmacophores
@@ -1851,9 +1852,9 @@ This is more easily demonstrated than explained:
 >>> fcgen.AddFragsFromMol(m,fcat)
 3
 >>> fcat.GetEntryDescription(0)
-'CC<-O>'
+'C<-O>C'
 >>> fcat.GetEntryDescription(1)
-'C<-C(=O)O>=C'
+'C=C<-C(=O)O>'
 >>> fcat.GetEntryDescription(2)
 'C<-C(=O)O>=CC<-O>'
 
@@ -1894,13 +1895,13 @@ method:
 >>> fcgen.AddFragsFromMol(m,fcat)
 15
 >>> fcat.GetEntryDescription(0)
-'CC<-O>'
+'C<-O>C'
 >>> fcat.GetEntryDescription(1)
 'CN<-cPropyl>'
 >>> list(fcat.GetEntryDownIds(0))
 [3, 4]
 >>> fcat.GetEntryDescription(3)
-'CCC<-O>'
+'C<-O>CC'
 >>> fcat.GetEntryDescription(4)
 'C<-O>CN<-cPropyl>'
 
@@ -1913,7 +1914,7 @@ The fragments from multiple molecules can be added to a catalog:
 >>> fcat.GetNumEntries()
 1169
 >>> fcat.GetEntryDescription(0)
-'cC'
+'Cc'
 >>> fcat.GetEntryDescription(100)
 'cc-nc(C)n'
 
@@ -2084,49 +2085,36 @@ ValueError: Sanitization error: Can't kekulize mol
 <BLANKLINE>
 
 More complex transformations can be carried out using the
-:api:`rdkit.Chem.rdchem.EditableMol` class:
+:api:`rdkit.Chem.rdchem.RWMol` class:
 
->>> m = Chem.MolFromSmiles('CC(=O)O') 
->>> em = Chem.EditableMol(m) 
->>> em.ReplaceAtom(3,Chem.Atom(7)) 
->>> em.AddAtom(Chem.Atom(6)) 
-4
->>> em.AddAtom(Chem.Atom(6)) 
-5
->>> em.AddBond(3,4,Chem.BondType.SINGLE) 
-4
->>> em.AddBond(4,5,Chem.BondType.DOUBLE) 
-5
->>> em.RemoveAtom(0) 
+>>> m = Chem.MolFromSmiles('CC(=O)C=CC=C')
+>>> mw = Chem.RWMol(m)
+>>> mw.ReplaceAtom(4,Chem.Atom(7))
+>>> mw.AddAtom(Chem.Atom(6))
+7
+>>> mw.AddAtom(Chem.Atom(6))
+8
+>>> mw.AddBond(6,7,Chem.BondType.SINGLE)
+7
+>>> mw.AddBond(7,8,Chem.BondType.DOUBLE)
+8
+>>> mw.AddBond(8,3,Chem.BondType.SINGLE)
+9
+>>> mw.RemoveAtom(0)
+>>> mw.GetNumAtoms()
+8
 
-Note that the :api:`rdkit.Chem.rdchem.EditableMol` must be converted
-back into a standard :api:`rdkit.Chem.rdchem.Mol` before much else can
-be done with it:
 
->>> em.GetNumAtoms()
-Traceback (most recent call last):
-  File "/usr/lib/python2.6/doctest.py", line 1253, in __run
-    compileflags, 1) in test.globs
-  File "<doctest default[0]>", line 1, in <module>
-    em.GetNumAtoms()
-AttributeError: 'EditableMol' object has no attribute 'GetNumAtoms'
->>> Chem.MolToSmiles(em) 
-Traceback (most recent call last):
-  File "/usr/lib/python2.6/doctest.py", line 1253, in __run
-    compileflags, 1) in test.globs
-  File "<doctest default[1]>", line 1, in <module>
-    Chem.MolToSmiles(em)
-ArgumentError: Python argument types in
-    rdkit.Chem.rdmolfiles.MolToSmiles(EditableMol)
-did not match C++ signature:
-    MolToSmiles(RDKit::ROMol {lvalue} mol, bool isomericSmiles=False, bool kekuleSmiles=False, int rootedAtAtom=-1, bool canonical=True)
->>> m2 = em.GetMol()
->>> Chem.SanitizeMol(m2)
+The RWMol can be used just like an ROMol:
+
+>>> Chem.MolToSmiles(mw)
+'O=CC1C=CC=CN=1'
+>>> Chem.SanitizeMol(mw)
 rdkit.Chem.rdmolops.SanitizeFlags.SANITIZE_NONE
->>> Chem.MolToSmiles(m2)
-'C=CNC=O'
+>>> Chem.MolToSmiles(mw)
+'O=Cc1ccccn1'
 
-It is even easier to generate nonsense using the EditableMol than it
+It is even easier to generate nonsense using the RWMol than it
 is with standard molecules.  If you need chemically reasonable
 results, be certain to sanitize the results.
 
@@ -2174,145 +2162,159 @@ List of Available Descriptors
 *****************************
 
 
-+-----------------------------------------------------+-------------------------------------------+
-|Descriptor/Descriptor                                |Notes                                      |
-|Family                                               |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|Gasteiger/Marsili                                    |*Tetrahedron*                              |
-|Partial Charges                                      |**36**:3219\-28                            |
-|                                                     |(1980)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|BalabanJ                                             |*Chem. Phys. Lett.*                        |
-|                                                     |**89**:399\-404                            |
-|                                                     |(1982)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|BertzCT                                              |*J. Am. Chem. Soc.*                        |
-|                                                     |**103**:3599\-601                          |
-|                                                     |(1981)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|Ipc                                                  |*J. Chem. Phys.*                           |
-|                                                     |**67**:4517\-33                            |
-|                                                     |(1977)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|HallKierAlpha                                        |*Rev. Comput. Chem.*                       |
-|                                                     |**2**:367\-422                             |
-|                                                     |(1991)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|Kappa1 \- Kappa3                                     |*Rev. Comput. Chem.*                       |
-|                                                     |**2**:367\-422                             |
-|                                                     |(1991)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|Chi0, Chi1                                           |*Rev. Comput. Chem.*                       |
-|                                                     |**2**:367\-422                             |
-|                                                     |(1991)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|Chi0n \- Chi4n                                       |*Rev. Comput. Chem.*                       |
-|                                                     |**2**:367\-422                             |
-|                                                     |(1991)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|Chi0v \- Chi4v                                       |*Rev. Comput. Chem.*                       |
-|                                                     |**2**:367\-422                             |
-|                                                     |(1991)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|MolLogP                                              |Wildman and Crippen                        |
-|                                                     |*JCICS*                                    |
-|                                                     |**39**:868\-73                             |
-|                                                     |(1999)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|MolMR                                                |Wildman and Crippen                        |
-|                                                     |*JCICS*                                    |
-|                                                     |**39**:868\-73                             |
-|                                                     |(1999)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|MolWt                                                |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|ExactMolWt                                           |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|HeavyAtomCount                                       |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|HeavyAtomMolWt                                       |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|NHOHCount                                            |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|NOCount                                              |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|NumHAcceptors                                        |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|NumHDonors                                           |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|NumHeteroatoms                                       |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|NumRotatableBonds                                    |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|NumValenceElectrons                                  |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|NumAmideBonds                                        |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|Num{Aromatic,Saturated,Aliphatic}Rings               |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|Num{Aromatic,Saturated,Aliphatic}{Hetero,Carbo}cycles|                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|RingCount                                            |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|FractionCSP3                                         |                                           |
-+-----------------------------------------------------+-------------------------------------------+
-|TPSA                                                 |*J. Med. Chem.*                            |
-|                                                     |**43**:3714\-7,                            |
-|                                                     |(2000)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|LabuteASA                                            |*J. Mol. Graph. Mod.*                      |
-|                                                     |**18**:464\-77 (2000)                      |
-+-----------------------------------------------------+-------------------------------------------+
-|PEOE_VSA1 \- PEOE_VSA14                              |MOE\-type descriptors using partial charges|
-|                                                     |and surface area contributions             |
-|                                                     |http://www.chemcomp.com/journal/vsadesc.htm|
-+-----------------------------------------------------+-------------------------------------------+
-|SMR_VSA1 \- SMR_VSA10                                |MOE\-type descriptors using MR             |
-|                                                     |contributions and surface area             |
-|                                                     |contributions                              |
-|                                                     |http://www.chemcomp.com/journal/vsadesc.htm|
-+-----------------------------------------------------+-------------------------------------------+
-|SlogP_VSA1 \- SlogP_VSA12                            |MOE\-type descriptors using LogP           |
-|                                                     |contributions and surface area             |
-|                                                     |contributions                              |
-|                                                     |http://www.chemcomp.com/journal/vsadesc.htm|
-+-----------------------------------------------------+-------------------------------------------+
-|EState_VSA1 \- EState_VSA11                          |MOE\-type descriptors using EState indices |
-|                                                     |and surface area contributions (developed  |
-|                                                     |at RD, not described in the CCG paper)     |
-+-----------------------------------------------------+-------------------------------------------+
-|VSA_EState1 \- VSA_EState10                          |MOE\-type descriptors using EState indices |
-|                                                     |and surface area contributions (developed  |
-|                                                     |at RD, not described in the CCG paper)     |
-+-----------------------------------------------------+-------------------------------------------+
-|MQNs                                                 |Nguyen et al. *ChemMedChem* **4**:1803\-5  |
-|                                                     |(2009)                                     |
-+-----------------------------------------------------+-------------------------------------------+
-|Topliss fragments                                    |implemented using a set of SMARTS          |
-|                                                     |definitions in                             |
-|                                                     |$(RDBASE)/Data/FragmentDescriptors.csv     |
-+-----------------------------------------------------+-------------------------------------------+
-                                                                                                                                                                                      
++-----------------------------------------------------+-------------------------------------------+----------+
+|Descriptor/Descriptor                                |Notes                                      | Language |
+|Family                                               |                                           |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|Gasteiger/Marsili                                    |*Tetrahedron*                              | C++      |
+|Partial Charges                                      |**36**:3219\-28                            |          |
+|                                                     |(1980)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|BalabanJ                                             |*Chem. Phys. Lett.*                        | Python   |
+|                                                     |**89**:399\-404                            |          |
+|                                                     |(1982)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|BertzCT                                              |*J. Am. Chem. Soc.*                        | Python   |
+|                                                     |**103**:3599\-601                          |          |
+|                                                     |(1981)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|Ipc                                                  |*J. Chem. Phys.*                           | Python   |
+|                                                     |**67**:4517\-33                            |          |
+|                                                     |(1977)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|HallKierAlpha                                        |*Rev. Comput. Chem.*                       | C++      |
+|                                                     |**2**:367\-422                             |          |
+|                                                     |(1991)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|Kappa1 \- Kappa3                                     |*Rev. Comput. Chem.*                       | C++      |
+|                                                     |**2**:367\-422                             |          |
+|                                                     |(1991)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|Chi0, Chi1                                           |*Rev. Comput. Chem.*                       | Python   |
+|                                                     |**2**:367\-422                             |          |
+|                                                     |(1991)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|Chi0n \- Chi4n                                       |*Rev. Comput. Chem.*                       | C++      |
+|                                                     |**2**:367\-422                             |          |
+|                                                     |(1991)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|Chi0v \- Chi4v                                       |*Rev. Comput. Chem.*                       | C++      |
+|                                                     |**2**:367\-422                             |          |
+|                                                     |(1991)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|MolLogP                                              |Wildman and Crippen                        | C++      |
+|                                                     |*JCICS*                                    |          |
+|                                                     |**39**:868\-73                             |          |
+|                                                     |(1999)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|MolMR                                                |Wildman and Crippen                        | C++      |
+|                                                     |*JCICS*                                    |          |
+|                                                     |**39**:868\-73                             |          |
+|                                                     |(1999)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|MolWt                                                |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|ExactMolWt                                           |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|HeavyAtomCount                                       |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|HeavyAtomMolWt                                       |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NHOHCount                                            |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NOCount                                              |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NumHAcceptors                                        |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NumHDonors                                           |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NumHeteroatoms                                       |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NumRotatableBonds                                    |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NumValenceElectrons                                  |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NumAmideBonds                                        |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|Num{Aromatic,Saturated,Aliphatic}Rings               |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|Num{Aromatic,Saturated,Aliphatic}{Hetero,Carbo}cycles|                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|RingCount                                            |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|FractionCSP3                                         |                                           | C++      |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NumSpiroAtoms                                        |  Number of spiro atoms                    | C++      |
+|                                                     | (atoms shared between rings that share    |          |
+|                                                     | exactly one atom)                         |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|NumBridgeheadAtoms                                   | Number of bridgehead atoms                | C++      |
+|                                                     | (atoms shared between rings that share    |          |
+|                                                     | at least two bonds)                       |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|TPSA                                                 |*J. Med. Chem.*                            | C++      |
+|                                                     |**43**:3714\-7,                            |          |
+|                                                     |(2000)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|LabuteASA                                            |*J. Mol. Graph. Mod.*                      | C++      |
+|                                                     |**18**:464\-77 (2000)                      |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|PEOE_VSA1 \- PEOE_VSA14                              |MOE\-type descriptors using partial charges| C++      |
+|                                                     |and surface area contributions             |          |
+|                                                     |http://www.chemcomp.com/journal/vsadesc.htm|          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|SMR_VSA1 \- SMR_VSA10                                |MOE\-type descriptors using MR             | C++      |
+|                                                     |contributions and surface area             |          |
+|                                                     |contributions                              |          |
+|                                                     |http://www.chemcomp.com/journal/vsadesc.htm|          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|SlogP_VSA1 \- SlogP_VSA12                            |MOE\-type descriptors using LogP           | C++      |
+|                                                     |contributions and surface area             |          |
+|                                                     |contributions                              |          |
+|                                                     |http://www.chemcomp.com/journal/vsadesc.htm|          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|EState_VSA1 \- EState_VSA11                          |MOE\-type descriptors using EState indices | Python   |
+|                                                     |and surface area contributions (developed  |          |
+|                                                     |at RD, not described in the CCG paper)     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|VSA_EState1 \- VSA_EState10                          |MOE\-type descriptors using EState indices | Python   |
+|                                                     |and surface area contributions (developed  |          |
+|                                                     |at RD, not described in the CCG paper)     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|MQNs                                                 |Nguyen et al. *ChemMedChem* **4**:1803\-5  | C++      |
+|                                                     |(2009)                                     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
+|Topliss fragments                                    |implemented using a set of SMARTS          | Python   |
+|                                                     |definitions in                             |          |
+|                                                     |$(RDBASE)/Data/FragmentDescriptors.csv     |          |
++-----------------------------------------------------+-------------------------------------------+----------+
 
 
 List of Available Fingerprints
 ******************************
 
-+----------------------+-----------------------------------------------------------------------------------------------------------+
-| Fingerprint Type     | Notes                                                                                                     |
-+----------------------+-----------------------------------------------------------------------------------------------------------+
-| Topological          | a Daylight\-like fingerprint based on hashing molecular subgraphs                                         |
-+----------------------+-----------------------------------------------------------------------------------------------------------+
-| Atom Pairs           | *JCICS* **25**:64\-73 (1985)                                                                              |
-+----------------------+-----------------------------------------------------------------------------------------------------------+
-| Topological Torsions | *JCICS* **27**:82\-5 (1987)                                                                               |
-+----------------------+-----------------------------------------------------------------------------------------------------------+
-| MACCS keys           | Using the 166 public keys implemented as SMARTS                                                           |
-+----------------------+-----------------------------------------------------------------------------------------------------------+
-| Morgan/Circular      | Fingerprints based on the Morgan algorithm, similar to the ECFP fingerprint*JCIM* **50**:742\-54 (2010).  |
-+----------------------+-----------------------------------------------------------------------------------------------------------+
-| 2D Pharmacophore     | Uses topological distances between pharmacophoric points.                                                 |
-+----------------------+-----------------------------------------------------------------------------------------------------------+
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
+| Fingerprint Type     | Notes                                                                                                     | Language |
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
+| RDKit                | a Daylight\-like fingerprint based on hashing molecular subgraphs                                         | C++      |
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
+| Atom Pairs           | *JCICS* **25**:64\-73 (1985)                                                                              | C++      |
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
+| Topological Torsions | *JCICS* **27**:82\-5 (1987)                                                                               | C++      |
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
+| MACCS keys           | Using the 166 public keys implemented as SMARTS                                                           | C++      |
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
+| Morgan/Circular      | Fingerprints based on the Morgan algorithm, similar to the ECFP/FCFP fingerprints                         | C++      |
+|                      | *JCIM* **50**:742\-54 (2010).                                                                             |          |
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
+| 2D Pharmacophore     | Uses topological distances between pharmacophoric points.                                                 | C++      |
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
+| Pattern              | a topological fingerprint optimized for substructure screening                                            | C++      |
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
+| Extended Reduced     | Derived from the ErG fingerprint published by Stiefl et al. in                                            | C++      |
+| Graphs               | *JCIM* **46**:208\–20 (2006).                                                                             |          |
+|                      | NOTE: these functions return an array of floats, not the usual fingerprint types                          |          |
++----------------------+-----------------------------------------------------------------------------------------------------------+----------+
 
 
 Feature Definitions Used in the Morgan Fingerprints
@@ -2364,7 +2366,7 @@ License
 
 .. image:: images/picture_5.png
 
-This document is copyright (C) 2007-2013 by Greg Landrum
+This document is copyright (C) 2007-2015 by Greg Landrum
 
 This work is licensed under the Creative Commons Attribution-ShareAlike 3.0 License.
 To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to Creative Commons, 543 Howard Street, 5th Floor, San Francisco, California, 94105, USA.

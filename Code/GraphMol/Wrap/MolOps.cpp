@@ -46,7 +46,7 @@ namespace RDKit{
     drawer.setFontSize(fontSize/24.);
     drawer.setLineWidth(drawer.lineWidth()*lineWidthMult);
     drawer.drawOptions().circleAtoms=includeAtomCircles;
-    drawer.drawMolecule(mol,highlightAtoms,NULL,confId);
+    drawer.drawMolecule(mol,highlightAtoms,NULL,NULL,confId);
     delete highlightAtoms;
     drawer.finishDrawing();
     return outs.str();
@@ -59,7 +59,7 @@ namespace RDKit{
                                           bool returnCutsPerAtom){
     std::vector<unsigned int> *bondIndices=pythonObjectToVect(pyBondIndices,mol.getNumBonds());
     if(!bondIndices)
-	throw_value_error("empty bond indices");
+        throw_value_error("empty bond indices");
       
     std::vector< std::pair<unsigned int,unsigned int> > *dummyLabels=0;
     if(pyDummyLabels){
@@ -75,7 +75,7 @@ namespace RDKit{
     if(pyBondTypes){
       unsigned int nVs=python::extract<unsigned int>(pyBondTypes.attr("__len__")());
       if(nVs!=bondIndices->size()) {
-	throw_value_error("bondTypes shorter than bondIndices");
+        throw_value_error("bondTypes shorter than bondIndices");
       }
       bondTypes = new std::vector< Bond::BondType >(nVs);
       for(unsigned int i=0;i<nVs;++i){
@@ -115,14 +115,22 @@ namespace RDKit{
     }
   }
 
-  ROMol *fragmentOnBondsHelper(const ROMol &mol,python::object pyBondIndices,
+    python::tuple getShortestPathHelper(const ROMol &mol, int aid1, int aid2) {
+      if(aid1<0 || aid1>=mol.getNumAtoms() ||
+         aid2<0 || aid2>=mol.getNumAtoms() ){
+        throw_value_error("bad atom index");
+      }
+      return static_cast<python::tuple>(MolOps::getShortestPath(mol, aid1, aid2));
+    }
+
+    ROMol *fragmentOnBondsHelper(const ROMol &mol,python::object pyBondIndices,
                                bool addDummies,
                                python::object pyDummyLabels,
                                python::object pyBondTypes,
                                python::list pyCutsPerAtom){
     std::vector<unsigned int> *bondIndices=pythonObjectToVect(pyBondIndices,mol.getNumBonds());
     if(!bondIndices)
-	throw_value_error("empty bond indices");
+        throw_value_error("empty bond indices");
     std::vector< std::pair<unsigned int,unsigned int> > *dummyLabels=0;
     if(pyDummyLabels){
       unsigned int nVs=python::extract<unsigned int>(pyDummyLabels.attr("__len__")());
@@ -137,7 +145,7 @@ namespace RDKit{
     if(pyBondTypes){
       unsigned int nVs=python::extract<unsigned int>(pyBondTypes.attr("__len__")());
       if(nVs!=bondIndices->size()) {
-	throw_value_error("bondTypes shorter than bondIndices");
+        throw_value_error("bondTypes shorter than bondIndices");
       }
       bondTypes = new std::vector< Bond::BondType >(nVs);
       for(unsigned int i=0;i<nVs;++i){
@@ -631,6 +639,14 @@ namespace RDKit{
     return result;
   }
 
+  ROMol *adjustQueryPropertiesHelper(const ROMol &mol,python::object pyparams){
+    MolOps::AdjustQueryParameters params;
+    if(pyparams != python::object()){
+      params = python::extract<MolOps::AdjustQueryParameters>(pyparams);
+    }
+    return MolOps::adjustQueryProperties(mol,&params);
+  }
+
   struct molops_wrapper {
     static void wrap() {
       std::string docString;
@@ -647,6 +663,7 @@ namespace RDKit{
         .value("SANITIZE_CLEANUPCHIRALITY",MolOps::SANITIZE_CLEANUPCHIRALITY)
         .value("SANITIZE_ADJUSTHS",MolOps::SANITIZE_ADJUSTHS)
         .value("SANITIZE_ALL",MolOps::SANITIZE_ALL)
+        .export_values();
         ;
 
       // ------------------------------------------------------------------------
@@ -772,8 +789,8 @@ namespace RDKit{
                   docString.c_str(),
                   python::return_value_policy<python::manage_new_object>());
 
-      python::def("MergeQueryHs", (ROMol *(*)(const ROMol &))&MolOps::mergeQueryHs,
-                  (python::arg("mol")),
+      python::def("MergeQueryHs", (ROMol *(*)(const ROMol &,bool))&MolOps::mergeQueryHs,
+                  (python::arg("mol"), python::arg("mergeUnmappedOnly")=false),
                   "merges hydrogens into their neighboring atoms as queries",
                   python::return_value_policy<python::manage_new_object>());
 
@@ -1281,6 +1298,17 @@ namespace RDKit{
 
 
       // ------------------------------------------------------------------------
+      docString="Find the shortest path between two atoms using the Bellman-Ford algorithm.\n\
+\n\
+  ARGUMENTS:\n\
+\n\
+    - mol: the molecule to use\n\
+    - idx1: index of the first atom\n\
+    - idx2: index of the second atom\n\
+\n";
+      python::def("GetShortestPath", getShortestPathHelper, docString.c_str());
+
+      // ------------------------------------------------------------------------
       docString="Does the CIP stereochemistry assignment \n\
   for the molecule's atoms (R/S) and double bond (Z/E).\n\
   Chiral atoms will have a property '_CIPCode' indicating\n\
@@ -1673,6 +1701,51 @@ namespace RDKit{
                    python::arg("fontSize")=12,
                    python::arg("includeAtomCircles")=true),
                   docString.c_str());
+
+
+      python::enum_<MolOps::AdjustQueryWhichFlags>("AdjustQueryWhichFlags")
+        .value("ADJUST_EMPTY",MolOps::ADJUST_EMPTY)
+        .value("ADJUST_RINGSONLY",MolOps::ADJUST_RINGSONLY)
+        .value("ADJUST_IGNOREDUMMIES",MolOps::ADJUST_IGNOREDUMMIES)
+        .value("ADJUST_SETALL",MolOps::ADJUST_SETALL)
+        .export_values();
+
+      docString="Parameters controlling which components of the query atoms are adjusted.\n\
+\n\
+Attributes:\n\
+  - adjustDegree: \n\
+      modified atoms have an explicit-degree query added based on their degree in the query \n\
+  - adjustDegreeFlags: \n\
+      controls which atoms have a degree query added \n\
+  - adjustRingCount: \n\
+      modified atoms have a ring-count query added based on their ring count in the query \n\
+  - adjustRingCountFlags: \n\
+      controls which atoms have a ring-cout query added \n\
+  - makeDummiesQueries: \n\
+      dummy atoms that do not have a specified isotope are converted to any-atom queries \n\
+\n\
+A note on the flags controlling which atoms are modified: \n\
+   These generally limit the set of atoms to be modified.\n\
+   For example if ADJUST_RINGSONLY is set, then only atoms in rings will be modified.\n\
+       ADJUST_EMPTY causes all atoms to be modified\n\
+       ADJUST_SETALL sets all of the ADJUST flags\n\
+";
+      python::class_<MolOps::AdjustQueryParameters>("AdjustQueryParameters",docString.c_str())
+        .def_readwrite("adjustDegree",&MolOps::AdjustQueryParameters::adjustDegree)
+        .def_readwrite("adjustDegreeFlags",&MolOps::AdjustQueryParameters::adjustDegreeFlags)
+        .def_readwrite("adjustRingCount",&MolOps::AdjustQueryParameters::adjustRingCount)
+        .def_readwrite("adjustRingCountFlags",&MolOps::AdjustQueryParameters::adjustRingCountFlags)
+        .def_readwrite("makeDummiesQueries",&MolOps::AdjustQueryParameters::makeDummiesQueries)
+        ;
+      
+      docString="Returns a new molecule where the query properties of atoms have been modified.";
+      python::def("AdjustQueryProperties", 
+                  adjustQueryPropertiesHelper,
+                  (python::arg("mol"),python::arg("params")=python::object()),
+                  docString.c_str(),
+                  python::return_value_policy<python::manage_new_object>());
+
+
 
     };
   };

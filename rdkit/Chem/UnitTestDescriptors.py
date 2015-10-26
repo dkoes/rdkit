@@ -14,6 +14,7 @@
 from __future__ import print_function
 from rdkit import RDConfig
 import unittest,os.path
+import io
 from rdkit.six.moves import cPickle
 from rdkit import Chem
 from rdkit.Chem import Descriptors
@@ -59,7 +60,10 @@ class TestCase(unittest.TestCase):
       self.assertEqual(actual,expected)
   def testMQNDetails(self):
     refFile = os.path.join(RDConfig.RDCodeDir,'Chem','test_data','MQNs_regress.pkl')
-    with open(refFile,'rb') as inf:
+    with open(refFile,'r') as intf:
+      buf = intf.read().replace('\r\n', '\n').encode('utf-8')
+      intf.close()
+    with io.BytesIO(buf) as inf:
       pkl = inf.read()
     refData  = cPickle.loads(pkl,encoding='bytes')
     fn = os.path.join(RDConfig.RDCodeDir,'Chem','test_data','aromat_regress.txt')
@@ -72,7 +76,7 @@ class TestCase(unittest.TestCase):
       self.assertEqual(mqns,refData[i][1])
   def testMQN(self):
     tgt = np.array([42917,   274,   870,   621,   135,  1582,    29,  3147,  5463,
-        6999,   470,    81, 19055,  4424,   309, 24061, 17820,     1,
+        6999,   470,    62588, 19055,  4424,   309, 24061, 17820,     1,
         8314, 24146, 16076,  5560,  4262,   646,   746, 13725,  5430,
         2629,   362, 24211, 15939,   292,    41,    20,  1852,  5642,
           31,     9,     1,     2,  3060,  1750])

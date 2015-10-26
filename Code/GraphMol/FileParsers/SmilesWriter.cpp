@@ -22,9 +22,9 @@
 
 namespace RDKit {
   
-  SmilesWriter::SmilesWriter(std::string fileName, 
-			     std::string delimiter,
-			     std::string nameHeader,
+  SmilesWriter::SmilesWriter(const std::string &fileName, 
+			     const std::string &delimiter,
+			     const std::string &nameHeader,
 			     bool includeHeader,
                              bool isomericSmiles,
                              bool kekuleSmiles) {
@@ -60,8 +60,8 @@ namespace RDKit {
     df_owner = takeOwnership;
     this->init(delimiter,nameHeader,includeHeader,isomericSmiles,kekuleSmiles);
   }
-  void SmilesWriter::init(std::string delimiter,
-			  std::string nameHeader,
+  void SmilesWriter::init(const std::string &delimiter,
+			  const std::string &nameHeader,
 			  bool includeHeader,
                           bool isomericSmiles,
                           bool kekuleSmiles){
@@ -121,10 +121,12 @@ namespace RDKit {
       dumpHeader();
     }
     
-    std::string name, smi = MolToSmiles(mol,df_isomericSmiles,df_kekuleSmiles);
+    std::string name = "";
+    std::string smi = MolToSmiles(mol,df_isomericSmiles,df_kekuleSmiles);
     (*dp_ostream) << smi;
     if(d_nameHeader!=""){
-      if (!mol.getPropIfPresent(common_properties::_Name, name)) {
+      if (!mol.getPropIfPresent(common_properties::_Name, name) ||
+          name.size()==0 ) {
         std::stringstream tstream;
         tstream << d_molid;
         name = tstream.str();

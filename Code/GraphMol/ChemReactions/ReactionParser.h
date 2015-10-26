@@ -44,7 +44,7 @@ namespace RDKit{
     //! construct with an error message
     explicit ChemicalReactionParserException(const char *msg) : _msg(msg) {};
     //! construct with an error message
-    explicit ChemicalReactionParserException(const std::string msg) : _msg(msg) {};
+    explicit ChemicalReactionParserException(const std::string &msg) : _msg(msg) {};
     //! get the error message
     const char *message () const { return _msg.c_str(); };
     ~ChemicalReactionParserException () throw () {};
@@ -90,10 +90,10 @@ namespace RDKit{
 
 
   //! returns the reaction SMARTS for a reaction
-  std::string ChemicalReactionToRxnSmarts(ChemicalReaction &rxn);
+  std::string ChemicalReactionToRxnSmarts(const ChemicalReaction &rxn);
 
   //! returns the reaction SMILES for a reaction
-  std::string ChemicalReactionToRxnSmiles(ChemicalReaction &rxn);
+  std::string ChemicalReactionToRxnSmiles(const ChemicalReaction &rxn, bool canonical=true);
 
   //! returns an RXN block for a reaction
   /*!

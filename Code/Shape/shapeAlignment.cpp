@@ -199,14 +199,14 @@ AlignmentInfo ShapeAlignment::gradientAscent(SiMath::Vector rotor)
 		if (d2 != NULL) {
 		    for (it1 = d2->begin(); it1 != d2->end(); ++it1) {
 			processQueue.push(std::make_pair < unsigned int,
-					  unsigned int >(i, *it1));
+					  unsigned int >((unsigned)i, (unsigned)*it1));
 		    }
 		}
 		// second add (child(i),j)
 		if (d1 != NULL) {
 		    for (it1 = d1->begin(); it1 != d1->end(); ++it1) {
 			processQueue.push(std::make_pair < unsigned int,
-					  unsigned int >(*it1, j));
+					  unsigned int >((unsigned)*it1, (unsigned)j));
 		    }
 		}
 	    }
@@ -293,14 +293,14 @@ AlignmentInfo ShapeAlignment::gradientAscent(SiMath::Vector rotor)
 		for (it1 = d1->begin(); it1 != d1->end(); ++it1) {
 		    // add (child(i),j)
 		    processQueue.push(std::make_pair < unsigned int,
-				      unsigned int >(*it1, j));
+				      unsigned int >((unsigned)*it1, (unsigned)j));
 		}
 	    } else {
 		// first add (i,child(j))
 		if (d2 != NULL) {
 		    for (it1 = d2->begin(); it1 != d2->end(); ++it1) {
 			processQueue.push(std::make_pair < unsigned int,
-					  unsigned int >(i, *it1));
+					  unsigned int >((unsigned)i, (unsigned)*it1));
 		    }
 		}
 		if (d1 != NULL
@@ -309,7 +309,7 @@ AlignmentInfo ShapeAlignment::gradientAscent(SiMath::Vector rotor)
 		    for (it1 = d1->begin(); it1 != d1->end(); ++it1) {
 			// add (child(i),j)
 			processQueue.push(std::make_pair < unsigned int,
-					  unsigned int >(*it1, j));
+					  unsigned int >((unsigned)*it1, (unsigned)j));
 		    }
 		}
 	    }
@@ -487,14 +487,14 @@ AlignmentInfo ShapeAlignment::simulatedAnnealing(SiMath::Vector rotor)
 		if (d2 != NULL) {
 		    for (it1 = d2->begin(); it1 != d2->end(); ++it1) {
 			processQueue.push(std::make_pair < unsigned int,
-					  unsigned int >(i, *it1));
+					  unsigned int >((unsigned)i, (unsigned)*it1));
 		    }
 		}
 		// second add (child(i),j)
 		if (d1 != NULL) {
 		    for (it1 = d1->begin(); it1 != d1->end(); ++it1) {
 			processQueue.push(std::make_pair < unsigned int,
-					  unsigned int >(*it1, j));
+					  unsigned int >((unsigned)*it1, (unsigned)j));
 		    }
 		}
 	    }
@@ -558,14 +558,14 @@ AlignmentInfo ShapeAlignment::simulatedAnnealing(SiMath::Vector rotor)
 		for (it1 = d1->begin(); it1 != d1->end(); ++it1) {
 		    // add (child(i),j)
 		    processQueue.push(std::make_pair < unsigned int,
-				      unsigned int >(*it1, j));
+				      unsigned int >((unsigned)*it1, (unsigned)j));
 		}
 	    } else {
 		// first add (i,child(j))
 		if (d2 != NULL) {
 		    for (it1 = d2->begin(); it1 != d2->end(); ++it1) {
 			processQueue.push(std::make_pair < unsigned int,
-					  unsigned int >(i, *it1));
+					  unsigned int >((unsigned)i, (unsigned)*it1));
 		    }
 		}
 		if (d1 != NULL
@@ -574,7 +574,7 @@ AlignmentInfo ShapeAlignment::simulatedAnnealing(SiMath::Vector rotor)
 		    for (it1 = d1->begin(); it1 != d1->end(); ++it1) {
 			// add (child(i),j)
 			processQueue.push(std::make_pair < unsigned int,
-					  unsigned int >(*it1, j));
+					  unsigned int >((unsigned)*it1, (unsigned)j));
 		    }
 		}
 	    }

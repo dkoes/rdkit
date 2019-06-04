@@ -27,7 +27,7 @@ Shape-it is linked against OpenBabel version 2.
 ***********************************************************************/
 
 
-
+#include<utility>
 #include <Shape/gaussianVolume.h>
 #include <Shape/solutionInfo.h>
 #include <eigen3/Eigen/Dense>
@@ -301,7 +301,7 @@ void listAtomVolumes(RDKit::ROMol & mol, GaussianVolume & gv)
 
 		// Update local variables
 		parents.push_back(std::make_pair < unsigned int,
-				  unsigned int >(i, *setIter));
+				  unsigned int >((unsigned)i, (unsigned)*setIter));
 		std::set < unsigned int >*tmp =
 		    new std::set < unsigned int >();
 		overlaps.push_back(tmp);
@@ -555,7 +555,7 @@ double atomOverlap(GaussianVolume & gRef, GaussianVolume & gDb)
 	    if (d2 != NULL) {
 		for (it1 = d2->begin(); it1 != d2->end(); ++it1) {
 		    processQueue.push(std::make_pair < unsigned int,
-				      unsigned int >(i, *it1));
+				      unsigned int >((unsigned)i, (unsigned)*it1));
 		}
 	    }
 	    // Second add (child(i,j))
@@ -563,7 +563,7 @@ double atomOverlap(GaussianVolume & gRef, GaussianVolume & gDb)
 		for (it1 = d1->begin(); it1 != d1->end(); ++it1) {
 		    // add (child(i),j)
 		    processQueue.push(std::make_pair < unsigned int,
-				      unsigned int >(*it1, j));
+				      unsigned int >((unsigned)*it1, (unsigned)j));
 		}
 	    }
 	}
@@ -617,14 +617,14 @@ double atomOverlap(GaussianVolume & gRef, GaussianVolume & gDb)
 	    for (it1 = d1->begin(); it1 != d1->end(); ++it1) {
 		// Add (child(i),j)
 		processQueue.push(std::make_pair < unsigned int,
-				  unsigned int >(*it1, j));
+				  unsigned int >((unsigned)*it1, (unsigned)j));
 	    }
 	} else {
 	    // First add (i,child(j))
 	    if (d2 != NULL) {
 		for (it1 = d2->begin(); it1 != d2->end(); ++it1) {
 		    processQueue.push(std::make_pair < unsigned int,
-				      unsigned int >(i, *it1));
+				      unsigned int >((unsigned)i, (unsigned)*it1));
 		}
 	    }
 	    if (d1 != NULL
@@ -632,7 +632,7 @@ double atomOverlap(GaussianVolume & gRef, GaussianVolume & gDb)
 		for (it1 = d1->begin(); it1 != d1->end(); ++it1) {
 		    // add (child(i),j)
 		    processQueue.push(std::make_pair < unsigned int,
-				      unsigned int >(*it1, j));
+				      unsigned int >((unsigned)*it1, (unsigned)j));
 		}
 	    }
 	}

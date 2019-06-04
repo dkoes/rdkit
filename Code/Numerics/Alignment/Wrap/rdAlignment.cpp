@@ -10,10 +10,9 @@
 //
 #define PY_ARRAY_UNIQUE_SYMBOL rdalignment_array_API
 #include <boost/python.hpp>
-#include <boost/python/numeric.hpp>
 #include "numpy/arrayobject.h"
 #include <RDBoost/import_array.h>
-
+#include <RDBoost/boost_numpy.h>
 #include <RDBoost/PySequenceHolder.h>
 #include <RDBoost/Wrap.h>
 #include <Geometry/point.h>

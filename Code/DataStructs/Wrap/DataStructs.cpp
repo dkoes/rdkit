@@ -15,7 +15,7 @@
 #include <DataStructs/BitVects.h>
 #include <DataStructs/DiscreteValueVect.h>
 #include "DataStructs.h"
-#include <boost/python/numeric.hpp>
+#include <RDBoost/boost_numpy.h>
 #include <numpy/npy_common.h>
 #include <numpy/arrayobject.h>
 #include <RDBoost/import_array.h>

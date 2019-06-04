@@ -12,8 +12,9 @@
 #define PY_ARRAY_UNIQUE_SYMBOL rdpicker_array_API
 #include <boost/python.hpp>
 #include <RDBoost/Wrap.h>
-#include <boost/python/numeric.hpp>
 #include "numpy/oldnumeric.h"
+#include <RDBoost/boost_numpy.h>
+
 #include <map>
 
 #include <DataStructs/BitVects.h>

@@ -24,6 +24,7 @@
 #include <GraphMol/Subgraphs/SubgraphUtils.h>
 #include <GraphMol/Fingerprints/Fingerprints.h>
 #include <GraphMol/FileParsers/MolFileStereochem.h>
+#include <GraphMol/FileParsers/ProximityBonds.h>
 #include <GraphMol/ChemTransforms/ChemTransforms.h>
 #include <RDBoost/Wrap.h>
 #include <RDBoost/python_streambuf.h>
@@ -388,6 +389,11 @@ namespace RDKit{
   void setHybridizationMol(ROMol &mol) {
     RWMol &wmol = static_cast<RWMol &>(mol);
     MolOps::setHybridization(wmol);
+  }
+  
+  void connectTheDots(ROMol &mol){
+    RWMol &wmol = static_cast<RWMol &>(mol);
+    ConnectTheDots(&wmol);
   }
   
   VECT_INT_VECT getSymmSSSR(ROMol &mol) {
@@ -1080,6 +1086,19 @@ namespace RDKit{
                   (python::arg("mol")),
                   docString.c_str());
       
+      docString="Assigns bonds to disconnected molecule\n\
+\n\
+  ARGUMENTS:\n\
+\n\
+    - mol: the molecule to use\n\
+\n\
+  NOTES:\n\
+\n\
+    - The molecule is modified in place.\n\
+\n";
+      python::def("ConnectTheDots", connectTheDots,
+                  (python::arg("mol")),
+                  docString.c_str());      
 
 
       // ------------------------------------------------------------------------

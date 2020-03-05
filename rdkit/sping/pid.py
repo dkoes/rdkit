@@ -392,10 +392,10 @@ class Canvas:
                 h = self.fontHeight(font)
                 dy = h * math.cos(angle*math.pi/180.0)
                 dx = h * math.sin(angle*math.pi/180.0)
-                s = string.replace(s, '\r\n', '\n')
-                s = string.replace(s, '\n\r', '\n')
-                s = string.replace(s, '\r', '\n')
-                lines = string.split(s, '\n')
+                s = str.replace(s, '\r\n', '\n')
+                s = str.replace(s, '\n\r', '\n')
+                s = str.replace(s, '\r', '\n')
+                lines = str.split(s, '\n')
                 for line in lines:
                         self.drawString(line, x, y, font, color, angle)
                         x = x + dx

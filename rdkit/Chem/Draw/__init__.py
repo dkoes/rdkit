@@ -145,7 +145,7 @@ def MolToImage(mol, size=(300,300), kekulize=True, wedgeBonds=True,
 def MolToJSON(mol, size=(300,300), kekulize=True, wedgeBonds=True,
                fitImage=False, options=None, **kwargs):
   if not mol:
-    raise ValueError,'Null molecule provided'
+    raise (ValueError,'Null molecule provided')
     
   from jsonCanvas import Canvas
   canvas = Canvas(size=size)

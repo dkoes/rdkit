@@ -76,7 +76,7 @@ class Canvas(CanvasBase):
     self.imageType=imageType
     if image is not None:
       try:
-      	imgd = image.tostring("raw","BGRA")
+      	imgd = image.tobytes("raw","BGRA")
       except SystemError:
         r,g,b,a = image.split()
         imgd = Image.merge("RGBA",(b,g,r,a)).tostring("raw","RGBA")
@@ -123,10 +123,10 @@ class Canvas(CanvasBase):
     elif self.image is not None:
       # on linux at least it seems like the PIL images are BGRA, not RGBA:
       if hasattr(self.surface,'get_data'):
-        self.image.fromstring(bytes(self.surface.get_data()),
+        self.image.frombytes(bytes(self.surface.get_data()),
                               "raw","BGRA",0,1)
       else:
-        self.image.fromstring(bytes(surface.get_data_as_rgba()),
+        self.image.frombytes(bytes(surface.get_data_as_rgba()),
                               "raw","RGBA",0,1)
       self.surface.finish()
     elif self.imageType == "png":
@@ -180,13 +180,22 @@ class Canvas(CanvasBase):
                                 weight)
     text = scriptPattern.sub('',text)
     self.ctx.set_font_size(font.size)
-    w,h=self.ctx.text_extents(text)[2:4]
-    bw,bh=w+h*0.4,h*1.4
-    offset = w*pos[2]
-    dPos = pos[0]-w/2.+offset,pos[1]+h/2.
-    self.ctx.set_source_rgb(*color)
-    self.ctx.move_to(*dPos)
-    self.ctx.show_text(text)
+    
+    W = pos[0]
+    H = pos[1]
+    bw = 0
+    bh = 0
+    for t in text.split('\n'):
+        w,h=self.ctx.text_extents(t)[2:4]
+        bw = max(bw,w+h*0.4)
+        bh +=h*1.4
+        #bw,bh=w+h*0.4,h*1.4
+        offset = w*pos[2]
+        dPos = W-w/2.+offset,H+h/2.
+        H += bh
+        self.ctx.set_source_rgb(*color)
+        self.ctx.move_to(*dPos)
+        self.ctx.show_text(t)
 
     if 0:
       self.ctx.move_to(dPos[0],dPos[1])
